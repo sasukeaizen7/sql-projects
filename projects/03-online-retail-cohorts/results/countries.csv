@@ -1,0 +1,11 @@
+country,customers,revenue,avg_order_value,share_pct
+United Kingdom,5325,13695251.0,413.98,83.5
+EIRE,3,558166.0,1073.4,3.4
+Netherlands,22,542701.0,2547.89,3.3
+Germany,107,379795.0,505.05,2.3
+France,93,294262.0,501.3,1.8
+Australia,15,166727.0,1961.49,1.0
+Switzerland,22,92292.0,1183.23,0.6
+Spain,38,85024.0,603.01,0.5
+Sweden,19,83710.0,862.99,0.5
+Denmark,12,63478.0,1511.39,0.4

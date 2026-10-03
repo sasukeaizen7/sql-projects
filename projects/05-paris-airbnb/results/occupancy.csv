@@ -1,0 +1,5 @@
+room_type,listings,median_nights_booked,median_revenue,p90_revenue
+Entire home/apt,37404,94.0,20175.0,77550.0
+Private room,3674,144.0,18094.0,47790.0
+Hotel room,121,83.0,19266.0,64337.0
+Shared room,107,156.0,10494.0,21803.0

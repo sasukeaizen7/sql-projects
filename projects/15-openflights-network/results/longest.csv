@@ -1,0 +1,11 @@
+route,from_city,to_city,distance_km
+SYD → DFW,Sydney,Dallas-Fort Worth,13808.0
+JNB → ATL,Johannesburg,Atlanta,13583.0
+DXB → LAX,Dubai,Los Angeles,13400.0
+JED → LAX,Jeddah,Los Angeles,13390.0
+DXB → IAH,Dubai,Houston,13125.0
+DXB → SFO,Dubai,San Francisco,13020.0
+HKG → JFK,Hong Kong,New York,12970.0
+HKG → EWR,Hong Kong,Newark,12960.0
+IAH → DOH,Houston,Doha,12933.0
+DXB → DFW,Dubai,Dallas-Fort Worth,12919.0

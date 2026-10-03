@@ -1,0 +1,7 @@
+segment,customers,customers_pct,revenue,revenue_pct,median_recency_days
+1. Champions,1272,21.8,11301156.0,68.9,17.0
+2. Loyal,1471,25.2,2634736.0,16.1,67.0
+3. New / promising,458,7.8,243260.0,1.5,24.0
+4. At risk,759,13.0,1386451.0,8.5,359.0
+5. Lost,1577,27.0,683587.0,4.2,435.0
+6. Need attention,301,5.2,142551.0,0.9,96.0

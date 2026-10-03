@@ -1,0 +1,8 @@
+quality,lines,pct
+ok,778784,72.96
+no customer id,226758,21.24
+duplicate across sheets,22523,2.11
+cancellation,19165,1.8
+order cancelled afterwards,9754,0.91
+non-positive quantity or price,5937,0.56
+"non-product line (postage, fees, adjustments)",4450,0.42

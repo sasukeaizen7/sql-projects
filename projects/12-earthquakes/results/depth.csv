@@ -1,0 +1,4 @@
+depth_class,events,pct,avg_mag,m7_plus
+1. shallow (< 70 km),38655,83.2,5.34,291
+2. intermediate (70-300 km),6083,13.1,5.34,58
+3. deep (300+ km),1724,3.7,5.54,38

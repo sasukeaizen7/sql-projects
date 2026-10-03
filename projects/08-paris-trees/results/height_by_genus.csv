@@ -1,0 +1,11 @@
+genus,measured_trees,median_height_m,p90_height_m,median_circumference_cm
+Platanus,41597,14.0,20.0,109.0
+Aesculus,23694,11.0,19.0,110.0
+Tilia,20997,10.0,16.0,90.0
+Acer,17260,8.0,15.0,74.0
+Styphnolobium,10905,10.0,16.0,90.0
+Prunus,8677,5.0,8.0,45.0
+Quercus,5596,7.0,16.0,55.0
+Fraxinus,5576,7.0,15.0,65.0
+Celtis,4533,8.0,15.0,85.0
+Pyrus,4350,6.0,10.0,45.0

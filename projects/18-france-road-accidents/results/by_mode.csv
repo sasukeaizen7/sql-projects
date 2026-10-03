@@ -1,0 +1,10 @@
+mode,people_involved,killed,killed_per_100_involved,killed_or_hospitalized_pct
+Pedestrian,9401,498,5.3,32.9
+Motorbike / moped,19752,824,4.17,35.5
+Bicycle / e-bike,5894,233,3.95,27.3
+Other,1856,54,2.91,15.9
+Car,71778,1604,2.23,12.5
+Van,8609,130,1.51,8.2
+E-scooter / personal device,3295,49,1.49,18.6
+Truck,2641,32,1.21,6.5
+Bus / coach,1961,8,0.41,3.2

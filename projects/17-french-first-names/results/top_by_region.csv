@@ -1,0 +1,37 @@
+region,sex,name,babies
+Auvergne-Rhône-Alpes,boy,Gabriel,515
+Auvergne-Rhône-Alpes,girl,Alba,375
+Bourgogne-Franche-Comté,boy,Gabriel,180
+Bourgogne-Franche-Comté,girl,Ambre,140
+Bretagne,boy,Malo,210
+Bretagne,girl,Louise,200
+Centre-Val de Loire,boy,Gabriel,155
+Centre-Val de Loire,girl,Louise,125
+Corse,boy,Gabriel,20
+Corse,girl,Livia,20
+Grand Est,boy,Gabriel,340
+Grand Est,girl,Louise,265
+Guadeloupe,boy,Noah,20
+Guadeloupe,girl,Inaya,15
+Guyane,boy,Ethan,35
+Guyane,girl,Inaya,25
+Hauts-de-France,boy,Gabriel,430
+Hauts-de-France,girl,Ambre,400
+La Réunion,boy,Kaïs,70
+La Réunion,girl,Inaya,60
+Martinique,boy,Noah,25
+Martinique,girl,Inaya,15
+Mayotte,boy,Rayane,50
+Mayotte,girl,Inaya,35
+Normandie,boy,Maël,215
+Normandie,girl,Ambre,205
+Nouvelle-Aquitaine,boy,Gabriel,410
+Nouvelle-Aquitaine,girl,Louise,325
+Occitanie,boy,Gabriel,370
+Occitanie,girl,Alba,285
+Pays de la Loire,boy,Gabriel,265
+Pays de la Loire,girl,Jade,235
+Provence-Alpes-Côte d'Azur,boy,Gabriel,355
+Provence-Alpes-Côte d'Azur,girl,Alba,260
+Île-de-France,boy,Adam,1020
+Île-de-France,girl,Alma,610

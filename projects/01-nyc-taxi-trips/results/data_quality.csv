@@ -1,0 +1,7 @@
+quality,trips,pct
+ok,2867592,96.73
+"distance not in (0, 100] miles",59635,2.01
+non-positive fare,34527,1.16
+longer than 3 hours,1982,0.07
+dropoff not after pickup,870,0.03
+pickup outside January 2024,18,0.0

@@ -1,0 +1,8 @@
+license_status,listings,pct
+1. No license number,7166,10.3
+2. Mobility lease (exempt),7828,11.3
+3. Hotel-type (exempt),1415,2.0
+4. Obvious placeholder (75123456789x),172,0.2
+5. Malformed number,173,0.2
+6. Same number used by several hosts,1411,2.0
+"7. Well-formed, unique number",51100,73.8

@@ -1,0 +1,9 @@
+# Raw data and local databases are downloaded/rebuilt by run.py: never commit them.
+projects/*/data/
+*.duckdb
+*.duckdb.wal
+
+.venv/
+__pycache__/
+*.pyc
+.DS_Store

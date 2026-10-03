@@ -1,0 +1,11 @@
+airline,country,routes,airports_served,median_route_km
+Ryanair,Ireland,2484,176,1435.0
+American Airlines,United States,2352,428,1373.0
+United Airlines,United States,2178,425,1392.0
+Delta Air Lines,United States,1981,347,1343.0
+US Airways,United States,1960,348,1297.0
+China Southern Airlines,China,1446,188,1128.0
+China Eastern Airlines,China,1251,218,1078.0
+Air China,China,1244,185,1182.0
+Southwest Airlines,United States,1143,94,1266.0
+easyJet,United Kingdom,1130,128,1215.0

@@ -1,0 +1,13 @@
+crime_type,crimes,share_pct,arrest_pct,domestic_pct
+Theft,60559,23.3,6.8,4.4
+Battery,46187,17.8,17.1,53.0
+Criminal Damage,28557,11.0,3.9,13.3
+Assault,23488,9.0,10.8,28.3
+Motor Vehicle Theft,21713,8.4,2.8,1.6
+Other Offense,17169,6.6,19.2,35.8
+Deceptive Practice,16462,6.3,3.3,1.6
+Robbery,9120,3.5,8.3,2.5
+Burglary,8437,3.2,5.5,3.8
+Weapons Violation,7841,3.0,61.3,0.7
+Narcotics,5998,2.3,96.3,0.1
+Criminal Trespass,4951,1.9,28.9,8.0

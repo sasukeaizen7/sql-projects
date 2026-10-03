@@ -1,0 +1,13 @@
+iata,name,city,country,destinations,countries_served
+FRA,Frankfurt am Main Airport,Frankfurt,Germany,239,93
+CDG,Charles de Gaulle International Airport,Paris,France,237,105
+AMS,Amsterdam Airport Schiphol,Amsterdam,Netherlands,232,79
+ISL,Atatürk International Airport,Istanbul,Turkey,224,91
+ATL,Hartsfield Jackson Atlanta International Airport,Atlanta,United States,217,43
+ORD,Chicago O'Hare International Airport,Chicago,United States,206,36
+PEK,Beijing Capital International Airport,Beijing,China,204,52
+MUC,Munich Airport,Munich,Germany,191,61
+DME,Domodedovo International Airport,Moscow,Russia,187,49
+DFW,Dallas Fort Worth International Airport,Dallas-Fort Worth,United States,187,28
+DXB,Dubai International Airport,Dubai,United Arab Emirates,185,86
+LHR,London Heathrow Airport,London,United Kingdom,170,77

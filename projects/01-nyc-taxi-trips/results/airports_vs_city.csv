@@ -1,0 +1,5 @@
+pickup,trips,avg_miles,avg_minutes,avg_total_usd,median_total_usd
+Newark Airport,49,5.8,7.7,99.18,109.2
+JFK Airport,138254,15.8,37.1,80.83,87.69
+LaGuardia Airport,87642,9.7,27.2,66.37,66.52
+All other zones,2641647,2.4,13.4,23.24,19.32
