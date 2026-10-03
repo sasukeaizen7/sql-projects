@@ -72,23 +72,21 @@ GROUP BY e.name, e.hire_date
 ORDER BY revenue_rank;
 
 -- name: customer_segments
--- Split customers into lifetime-value quartiles (NTILE) and compare the groups.
+-- How is customer lifetime value distributed? (Quartiles with ntile() would be meaningless: half the
+-- customers have exactly the same value, and ntile() splits tied rows arbitrarily.)
 WITH ltv AS (
     SELECT customer_id, sum(total) AS lifetime_value, count(*) AS orders
     FROM invoice
     GROUP BY customer_id
-), q AS (
-    SELECT *, ntile(4) OVER (ORDER BY lifetime_value DESC) AS quartile FROM ltv
 )
-SELECT quartile,
-       count(*)                          AS customers,
-       round(min(lifetime_value), 2)     AS min_ltv,
-       round(max(lifetime_value), 2)     AS max_ltv,
-       round(sum(lifetime_value), 2)     AS revenue,
-       round(avg(orders), 1)             AS avg_orders
-FROM q
-GROUP BY quartile
-ORDER BY quartile;
+SELECT lifetime_value,
+       count(*)                                                                AS customers,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1)                      AS pct,
+       sum(count(*)) OVER (ORDER BY lifetime_value DESC)                       AS customers_at_or_above,
+       round(avg(orders), 1)                                                   AS avg_orders
+FROM ltv
+GROUP BY lifetime_value
+ORDER BY lifetime_value DESC;
 
 -- name: top_artist_per_country
 -- The best-selling artist in each of the top 8 markets (ROW_NUMBER per partition).
@@ -109,7 +107,7 @@ WITH sales AS (
 SELECT country, artist, tracks_sold, country_tracks
 FROM ranked
 WHERE rn = 1
-ORDER BY country_tracks DESC
+ORDER BY country_tracks DESC, country
 LIMIT 8;
 
 -- name: catalog_coverage
@@ -123,3 +121,93 @@ JOIN media_type mt USING (media_type_id)
 LEFT JOIN (SELECT DISTINCT track_id FROM invoice_line) s USING (track_id)
 GROUP BY mt.name
 ORDER BY tracks DESC;
+
+-- ============================================================================================
+-- Advanced SQL
+-- ============================================================================================
+
+-- name: org_chart
+-- The reporting hierarchy (recursive CTE over the self-referencing employee table), with each
+-- person's path from the top and the revenue of every customer handled by them or anyone below them.
+WITH RECURSIVE tree(employee_id, name, title, depth, path) AS (
+    SELECT employee_id, name, title, 0, [name]
+    FROM employee WHERE reports_to IS NULL
+    UNION ALL
+    SELECT e.employee_id, e.name, e.title, t.depth + 1, list_append(t.path, e.name)
+    FROM employee e JOIN tree t ON e.reports_to = t.employee_id
+), closure(manager_id, employee_id) AS (       -- every (manager, employee-below-or-self) pair
+    SELECT employee_id, employee_id FROM employee
+    UNION ALL
+    SELECT c.manager_id, e.employee_id FROM closure c JOIN employee e ON e.reports_to = c.employee_id
+), rep_revenue AS (
+    SELECT c.support_rep_id AS employee_id, count(DISTINCT c.customer_id) AS customers, sum(i.total) AS revenue
+    FROM customer c JOIN invoice i USING (customer_id)
+    GROUP BY 1
+)
+SELECT repeat('    ', t.depth) || t.name                    AS employee,
+       t.title,
+       array_to_string(t.path, ' > ')                          AS reporting_line,
+       coalesce(sum(r.customers), 0)                           AS customers_in_scope,
+       coalesce(sum(r.revenue), 0)                             AS revenue_in_scope
+FROM tree t
+JOIN closure cl ON cl.manager_id = t.employee_id
+LEFT JOIN rep_revenue r ON r.employee_id = cl.employee_id
+GROUP BY t.employee_id, t.name, t.title, t.depth, t.path
+ORDER BY array_to_string(t.path, ' > ');
+
+-- name: full_album_purchases
+-- Relational division: which invoices bought EVERY track of an album? (Albums of 2+ tracks: buying
+-- the only track of a 1-track album is trivially a full album.)
+-- An invoice "covers" an album when no track of that album is missing from it (double NOT EXISTS).
+WITH albums AS (
+    SELECT album_id, count(*) AS tracks FROM track GROUP BY album_id HAVING count(*) >= 2
+), candidates AS (                 -- invoice/album pairs with at least one track bought
+    SELECT DISTINCT il.invoice_id, t.album_id
+    FROM invoice_line il JOIN track t USING (track_id)
+    WHERE t.album_id IN (SELECT album_id FROM albums)
+)
+SELECT count(*)                                                                AS invoice_album_pairs,
+       count(*) FILTER (WHERE NOT EXISTS (
+           SELECT 1 FROM track t
+           WHERE t.album_id = c.album_id
+             AND NOT EXISTS (SELECT 1 FROM invoice_line il
+                             WHERE il.invoice_id = c.invoice_id AND il.track_id = t.track_id))) AS full_album_purchases,
+       (SELECT max(n) FROM (SELECT count(*) AS n FROM invoice_line GROUP BY invoice_id)) AS max_lines_per_invoice
+FROM candidates c JOIN albums a USING (album_id);
+
+-- name: playlist_similarity
+-- Which playlists overlap? Jaccard similarity |A ∩ B| / |A ∪ B| from a self-join of the bridge table.
+WITH sizes AS (
+    SELECT playlist_id, count(*) AS tracks FROM playlist_track GROUP BY playlist_id
+), shared AS (
+    SELECT a.playlist_id AS a, b.playlist_id AS b, count(*) AS common
+    FROM playlist_track a
+    JOIN playlist_track b ON b.track_id = a.track_id AND b.playlist_id > a.playlist_id
+    GROUP BY ALL
+)
+SELECT pa.name || ' (#' || s.a || ')'                                AS playlist_a,
+       pb.name || ' (#' || s.b || ')'                                AS playlist_b,
+       sa.tracks AS tracks_a, sb.tracks AS tracks_b, s.common,
+       round(s.common / (sa.tracks + sb.tracks - s.common), 3)        AS jaccard
+FROM shared s
+JOIN sizes sa ON sa.playlist_id = s.a
+JOIN sizes sb ON sb.playlist_id = s.b
+JOIN playlist pa ON pa.playlist_id = s.a
+JOIN playlist pb ON pb.playlist_id = s.b
+WHERE s.common >= 10
+ORDER BY jaccard DESC, s.common DESC
+LIMIT 10;
+
+-- name: revenue_grouping_sets
+-- Revenue by media type, by year, and in total, in one pass (GROUPING SETS).
+SELECT CASE WHEN grouping(mt.name) = 1 THEN 'All media' ELSE mt.name END          AS media_type,
+       CASE WHEN grouping(year(i.invoice_date)) = 1 THEN 'All years'
+            ELSE year(i.invoice_date)::VARCHAR END                                AS year,
+       sum(il.quantity)                                                           AS tracks_sold,
+       sum(il.unit_price * il.quantity)                                           AS revenue
+FROM invoice_line il
+JOIN invoice i USING (invoice_id)
+JOIN track t USING (track_id)
+JOIN media_type mt USING (media_type_id)
+GROUP BY GROUPING SETS ((mt.name), (year(i.invoice_date)), ())
+ORDER BY grouping(mt.name), grouping(year(i.invoice_date)), revenue DESC, year;

@@ -29,7 +29,7 @@ FROM listings l
 JOIN arrondissements a USING (arrondissement)
 WHERE l.room_type = 'Entire home/apt' AND l.price_per_night BETWEEN 10 AND 2000 AND l.reviews_last_12m > 0
 GROUP BY ALL
-ORDER BY median_price DESC;
+ORDER BY median_price DESC, arrondissement;
 
 -- name: host_concentration
 -- Is Paris Airbnb run by residents or by professionals? Hosts grouped by portfolio size.

@@ -1,0 +1,65 @@
+-- inbound_reach: The reverse question: airports that can reach Paris-CDG in at most 2 flights. Now each step looks
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=8.040..8.211 rows=3.00 loops=1)
+  Group Key: reach.legs
+  Buffers: shared hit=403
+  CTE reach
+    ->  Recursive Union (actual time=0.011..7.387 rows=2160.00 loops=1)
+          Storage: Memory  Maximum Storage: 100kB
+          Buffers: shared hit=403
+          ->  Index Scan using airports_iata_key on airports (actual time=0.010..0.010 rows=1.00 loops=1)
+                Index Cond: (iata = 'CDG'::text)
+                Index Searches: 1
+                Buffers: shared hit=3
+          ->  Hash Join (actual time=0.042..1.993 rows=5255.67 loops=3)
+                Hash Cond: (e.dst_id = r.airport_id)
+                Buffers: shared hit=400
+                ->  Seq Scan on edges e (actual time=0.004..0.952 rows=36899.00 loops=2)
+                      Buffers: shared hit=400
+                ->  Hash (actual time=0.025..0.025 rows=78.00 loops=3)
+                      Buckets: 1024  Batches: 1  Memory Usage: 18kB
+                      ->  WorkTable Scan on reach r (actual time=0.016..0.020 rows=78.00 loops=3)
+                            Filter: (legs < 2)
+                            Rows Removed by Filter: 642
+  ->  Sort (actual time=8.039..8.084 rows=2160.00 loops=1)
+        Sort Key: reach.legs, reach.airport_id
+        Sort Method: quicksort  Memory: 147kB
+        Buffers: shared hit=403
+        ->  CTE Scan on reach (actual time=0.012..7.608 rows=2160.00 loops=1)
+              Storage: Memory  Maximum Storage: 100kB
+              Buffers: shared hit=403
+Planning Time: 0.119 ms
+Execution Time: 8.290 ms
+
+=== AFTER: CREATE INDEX edges_dst_src ON edges (dst_id, src_id) ===
+GroupAggregate (actual time=4.473..4.637 rows=3.00 loops=1)
+  Group Key: reach.legs
+  Buffers: shared hit=508
+  CTE reach
+    ->  Recursive Union (actual time=0.013..3.792 rows=2160.00 loops=1)
+          Storage: Memory  Maximum Storage: 100kB
+          Buffers: shared hit=508
+          ->  Index Scan using airports_iata_key on airports (actual time=0.012..0.012 rows=1.00 loops=1)
+                Index Cond: (iata = 'CDG'::text)
+                Index Searches: 1
+                Buffers: shared hit=3
+          ->  Nested Loop (actual time=0.020..0.711 rows=5255.67 loops=3)
+                Buffers: shared hit=505
+                ->  WorkTable Scan on reach r (actual time=0.015..0.020 rows=78.00 loops=3)
+                      Filter: (legs < 2)
+                      Rows Removed by Filter: 642
+                ->  Index Only Scan using edges_dst_src on edges e (actual time=0.002..0.004 rows=67.38 loops=234)
+                      Index Cond: (dst_id = r.airport_id)
+                      Heap Fetches: 0
+                      Index Searches: 234
+                      Buffers: shared hit=505
+  ->  Sort (actual time=4.472..4.517 rows=2160.00 loops=1)
+        Sort Key: reach.legs, reach.airport_id
+        Sort Method: quicksort  Memory: 147kB
+        Buffers: shared hit=508
+        ->  CTE Scan on reach (actual time=0.014..4.104 rows=2160.00 loops=1)
+              Storage: Memory  Maximum Storage: 100kB
+              Buffers: shared hit=508
+Planning Time: 0.136 ms
+Execution Time: 4.706 ms

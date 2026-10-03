@@ -1,0 +1,41 @@
+-- jfk_daily_plain: Daily trips and revenue from JFK with a plain index on pickup_zone_id: the index finds the 138k
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=99.456..135.959 rows=31.00 loops=1)
+  Group Key: ((pickup_at)::date)
+  Buffers: shared hit=16094 read=20094
+  ->  Gather Merge (actual time=98.108..119.579 rows=138254.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16094 read=20094
+        ->  Sort (actual time=81.001..82.588 rows=46084.67 loops=3)
+              Sort Key: ((pickup_at)::date)
+              Sort Method: quicksort  Memory: 2968kB
+              Buffers: shared hit=16094 read=20094
+              Worker 0:  Sort Method: quicksort  Memory: 2949kB
+              Worker 1:  Sort Method: quicksort  Memory: 3013kB
+              ->  Parallel Seq Scan on trips (actual time=0.411..76.226 rows=46084.67 loops=3)
+                    Filter: (pickup_zone_id = 132)
+                    Rows Removed by Filter: 909779
+                    Buffers: shared hit=16018 read=20094
+Planning Time: 0.091 ms
+Execution Time: 136.156 ms
+
+=== AFTER: CREATE INDEX trips_pickup_zone ON trips (pickup_zone_id) ===
+GroupAggregate (actual time=130.634..166.551 rows=31.00 loops=1)
+  Group Key: ((pickup_at)::date)
+  Buffers: shared read=33231, temp read=356 written=357
+  ->  Sort (actual time=129.019..141.897 rows=138254.00 loops=1)
+        Sort Key: ((pickup_at)::date)
+        Sort Method: external merge  Disk: 2848kB
+        Buffers: shared read=33231, temp read=356 written=357
+        ->  Bitmap Heap Scan on trips (actual time=15.579..100.716 rows=138254.00 loops=1)
+              Recheck Cond: (pickup_zone_id = 132)
+              Heap Blocks: exact=33112
+              Buffers: shared read=33231
+              ->  Bitmap Index Scan on trips_pickup_zone (actual time=9.658..9.658 rows=138254.00 loops=1)
+                    Index Cond: (pickup_zone_id = 132)
+                    Index Searches: 1
+                    Buffers: shared read=119
+Planning Time: 0.123 ms
+Execution Time: 174.614 ms

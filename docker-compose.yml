@@ -1,0 +1,13 @@
+# Optional PostgreSQL for the index benchmarks (projects 01, 03, 15), if PostgreSQL isn't installed.
+#   docker compose up -d      then      python run_all.py
+# Same address the toolkit uses by default: postgresql://portfolio@localhost:5433/portfolio.
+# Trust auth, bound to localhost only: a throwaway benchmark database, not for real data.
+services:
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: portfolio
+      POSTGRES_DB: portfolio
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "127.0.0.1:5433:5432"

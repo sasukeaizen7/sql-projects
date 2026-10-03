@@ -1,4 +1,4 @@
-"""Charts for the Online Retail II project: cohort retention, seasonality, RFM segments."""
+"""Charts for the Online Retail II project: cohort retention, seasonality, RFM segments, repeat purchases, indexes."""
 
 import sys
 from pathlib import Path
@@ -10,7 +10,7 @@ import pandas as pd  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
 from toolkit import Project, style, save, PALETTE, INK, INK_2  # noqa: E402
-from toolkit.charts import BLUES, THOUSANDS  # noqa: E402
+from toolkit.charts import BLUES, THOUSANDS, index_benchmark  # noqa: E402
 
 SOURCE = "UCI Machine Learning Repository, Online Retail II (Chen, 2019), CC BY 4.0"
 
@@ -70,8 +70,27 @@ def main(p: Project) -> None:
     ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0f}%")
     ax.set_xlim(0, max(r["revenue_pct"].max(), r["customers_pct"].max()) * 1.12)
     ax.legend(loc="lower right")
-    ax.set_title("Champions are 22% of customers but 69% of revenue")
-    save(fig, p.images / "rfm_segments.png", SOURCE, "RFM segments built with NTILE(5) scores on recency, frequency and monetary value")
+    ax.set_title("Champions are 21% of customers but 69% of revenue")
+    save(fig, p.images / "rfm_segments.png", SOURCE, "RFM segments built from quintile scores (percent_rank) on recency, frequency and monetary value")
+
+    # 4. Repeat purchases: how many customers reach their Nth order.
+    rp = p.result("repeat_purchase")
+    fig, ax = plt.subplots(figsize=(9, 3.8))
+    bars = ax.bar(rp["order_number"].astype(str), rp["pct_of_customers"], color=PALETTE[0], width=0.68)
+    bars[1].set_color(PALETTE[1])
+    for b, v in zip(bars, rp["pct_of_customers"]):
+        ax.text(b.get_x() + b.get_width() / 2, v + 1.5, f"{v:.0f}%", ha="center", fontsize=9, color=INK_2)
+    ax.set_ylim(0, 110)
+    ax.yaxis.set_major_formatter(lambda v, _: f"{v:.0f}%")
+    ax.grid(axis="x", visible=False)
+    ax.set_xlabel("order number")
+    ax.set_title("28% of customers never place a second order")
+    save(fig, p.images / "repeat_purchase.png", SOURCE, "% of customers who place at least N orders (customer order sequence built with ROW_NUMBER)")
+
+    # 5. PostgreSQL index benchmark.
+    if (p.results / "index_benchmark.csv").exists():
+        index_benchmark(p.result("index_benchmark"), p.images / "index_benchmark.png", SOURCE,
+                        "One missing index made a LATERAL query 5,000x slower")
 
 
 if __name__ == "__main__":

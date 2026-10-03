@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
 from toolkit import Project, style, save, bar_h, PALETTE, INK_2  # noqa: E402
-from toolkit.charts import BLUES, THOUSANDS  # noqa: E402
+from toolkit.charts import BLUES, THOUSANDS, index_benchmark  # noqa: E402
 
 SOURCE = "NYC Taxi & Limousine Commission, Yellow Taxi trips, January 2024"
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -51,6 +51,19 @@ def main(p: Project) -> None:
     ax.legend(loc="lower right")
     ax.set_title("Daily taxi trips in January 2024")
     save(fig, p.images / "daily_trips.png", SOURCE, "Trips per day and 7-day moving average (computed with a SQL window function)")
+
+    # 4. Fare outliers by payment type (Tukey fences per route).
+    o = p.result("fare_outliers")
+    fig, ax = plt.subplots(figsize=(9, 3.4))
+    bar_h(ax, o["payment"], o["outlier_pct"], fmt=lambda v: f"{v:.1f}%")
+    ax.set_title("Disputed trips are 4x more likely than card trips to have an abnormally high fare")
+    save(fig, p.images / "fare_outliers.png", SOURCE,
+         "% of trips whose fare is above Q3 + 3 x IQR of their pickup -> dropoff route (routes with 100+ trips)")
+
+    # 5. PostgreSQL index benchmark.
+    if (p.results / "index_benchmark.csv").exists():
+        index_benchmark(p.result("index_benchmark"), p.images / "index_benchmark.png", SOURCE,
+                        "The right index turns a 2.87M-row scan into a lookup; the wrong one changes nothing")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,32 @@
+-- nearest_airports: The 5 airports closest to the Eiffel Tower. ORDER BY distance LIMIT 5 is a k-nearest-neighbour
+
+=== BEFORE (constraint indexes only) ===
+Limit (actual time=19.299..19.316 rows=5.00 loops=1)
+  Buffers: shared hit=97
+  ->  Result (actual time=19.298..19.316 rows=5.00 loops=1)
+        Buffers: shared hit=97
+        ->  Sort (actual time=19.290..19.291 rows=5.00 loops=1)
+              Sort Key: (((ll_to_earth(lat, lon))::cube <-> '(4192973.89390147, 168004.08375288273, 4803308.400376462)'::cube)), airport_id
+              Sort Method: top-N heapsort  Memory: 26kB
+              Buffers: shared hit=97
+              ->  Seq Scan on airports (actual time=0.014..18.250 rows=7698.00 loops=1)
+                    Buffers: shared hit=97
+Planning Time: 0.224 ms
+Execution Time: 19.327 ms
+
+=== AFTER: CREATE INDEX airports_earth ON airports USING gist (ll_to_earth(lat, lon)) ===
+Limit (actual time=0.109..0.137 rows=5.00 loops=1)
+  Buffers: shared hit=9
+  ->  Result (actual time=0.108..0.136 rows=5.00 loops=1)
+        Buffers: shared hit=9
+        ->  Incremental Sort (actual time=0.096..0.097 rows=5.00 loops=1)
+              Sort Key: (((ll_to_earth(lat, lon))::cube <-> '(4192973.89390147, 168004.08375288273, 4803308.400376462)'::cube)), airport_id
+              Presorted Key: (((ll_to_earth(lat, lon))::cube <-> '(4192973.89390147, 168004.08375288273, 4803308.400376462)'::cube))
+              Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+              Buffers: shared hit=9
+              ->  Index Scan using airports_earth on airports (actual time=0.060..0.092 rows=6.00 loops=1)
+                    Order By: ((ll_to_earth(lat, lon))::cube <-> '(4192973.89390147, 168004.08375288273, 4803308.400376462)'::cube)
+                    Index Searches: 1
+                    Buffers: shared hit=9
+Planning Time: 0.173 ms
+Execution Time: 0.151 ms

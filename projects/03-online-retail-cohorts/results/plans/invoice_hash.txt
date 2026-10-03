@@ -1,0 +1,35 @@
+-- invoice_hash: The same lookup with a hash index (equality only: no ranges, no sorting). The textbook says it is
+
+=== BEFORE (constraint indexes only) ===
+Gather Merge (actual time=140.866..143.802 rows=541.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=12066
+  ->  Sort (actual time=20.081..20.088 rows=180.33 loops=3)
+        Sort Key: line_id
+        Sort Method: quicksort  Memory: 34kB
+        Buffers: shared hit=12066
+        Worker 0:  Sort Method: quicksort  Memory: 36kB
+        Worker 1:  Sort Method: quicksort  Memory: 25kB
+        ->  Parallel Seq Scan on sales (actual time=18.758..20.007 rows=180.33 loops=3)
+              Filter: (invoice = '576339'::text)
+              Rows Removed by Filter: 259414
+              Buffers: shared hit=11992
+Planning Time: 0.098 ms
+Execution Time: 143.847 ms
+
+=== AFTER: CREATE INDEX sales_invoice_hash ON sales USING hash (invoice) ===
+Sort (actual time=0.197..0.215 rows=541.00 loops=1)
+  Sort Key: line_id
+  Sort Method: quicksort  Memory: 46kB
+  Buffers: shared hit=12
+  ->  Bitmap Heap Scan on sales (actual time=0.040..0.133 rows=541.00 loops=1)
+        Recheck Cond: (invoice = '576339'::text)
+        Heap Blocks: exact=9
+        Buffers: shared hit=12
+        ->  Bitmap Index Scan on sales_invoice_hash (actual time=0.029..0.029 rows=541.00 loops=1)
+              Index Cond: (invoice = '576339'::text)
+              Index Searches: 1
+              Buffers: shared hit=3
+Planning Time: 0.050 ms
+Execution Time: 0.242 ms

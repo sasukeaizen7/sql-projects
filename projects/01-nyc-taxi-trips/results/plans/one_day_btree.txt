@@ -1,0 +1,37 @@
+-- one_day_btree: Revenue per hour on 15 January, with a regular B-tree on pickup_at.
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=94.570..116.559 rows=24.00 loops=1)
+  Group Key: (date_trunc('hour'::text, pickup_at))
+  Buffers: shared hit=16093 read=20093 written=282
+  ->  Gather Merge (actual time=94.007..107.478 rows=74742.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16093 read=20093 written=282
+        ->  Sort (actual time=78.045..78.822 rows=24914.00 loops=3)
+              Sort Key: (date_trunc('hour'::text, pickup_at))
+              Sort Method: quicksort  Memory: 1325kB
+              Buffers: shared hit=16093 read=20093 written=282
+              Worker 0:  Sort Method: quicksort  Memory: 1578kB
+              Worker 1:  Sort Method: quicksort  Memory: 1738kB
+              ->  Parallel Seq Scan on trips (actual time=16.443..75.972 rows=24914.00 loops=3)
+                    Filter: ((pickup_at >= '2024-01-15 00:00:00'::timestamp without time zone) AND (pickup_at < '2024-01-16 00:00:00'::timestamp without time zone))
+                    Rows Removed by Filter: 930950
+                    Buffers: shared hit=16019 read=20093 written=282
+Planning Time: 0.072 ms
+Execution Time: 116.790 ms
+
+=== AFTER: CREATE INDEX trips_pickup_btree ON trips (pickup_at) ===
+GroupAggregate (actual time=23.601..34.955 rows=24.00 loops=1)
+  Group Key: (date_trunc('hour'::text, pickup_at))
+  Buffers: shared hit=1155
+  ->  Sort (actual time=23.260..25.986 rows=74742.00 loops=1)
+        Sort Key: (date_trunc('hour'::text, pickup_at))
+        Sort Method: quicksort  Memory: 4092kB
+        Buffers: shared hit=1155
+        ->  Index Scan using trips_pickup_btree on trips (actual time=0.016..16.423 rows=74742.00 loops=1)
+              Index Cond: ((pickup_at >= '2024-01-15 00:00:00'::timestamp without time zone) AND (pickup_at < '2024-01-16 00:00:00'::timestamp without time zone))
+              Index Searches: 1
+              Buffers: shared hit=1155
+Planning Time: 0.095 ms
+Execution Time: 35.175 ms

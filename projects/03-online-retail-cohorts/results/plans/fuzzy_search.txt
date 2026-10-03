@@ -1,0 +1,46 @@
+-- fuzzy_search: Product search box: lines whose description contains "babushka", anywhere, any case. A B-tree can't
+
+=== BEFORE (constraint indexes only) ===
+Sort (actual time=79.333..84.186 rows=24.00 loops=1)
+  Sort Key: (sum(revenue)) DESC, description
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=11992
+  ->  HashAggregate (actual time=79.284..84.165 rows=24.00 loops=1)
+        Group Key: description
+        Batches: 1  Memory Usage: 97kB
+        Buffers: shared hit=11992
+        ->  Gather (actual time=25.183..82.904 rows=4680.00 loops=1)
+              Workers Planned: 2
+              Workers Launched: 2
+              Buffers: shared hit=11992
+              ->  Parallel Seq Scan on sales (actual time=9.059..62.384 rows=1560.00 loops=3)
+                    Filter: (description ~~* '%babushka%'::text)
+                    Rows Removed by Filter: 258035
+                    Buffers: shared hit=11992
+Planning Time: 0.254 ms
+Execution Time: 84.277 ms
+
+=== AFTER: CREATE INDEX sales_description_trgm ON sales USING gin (description gin_trgm_ops) ===
+Sort (actual time=6.128..6.130 rows=24.00 loops=1)
+  Sort Key: (sum(revenue)) DESC, description
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=2279
+  ->  GroupAggregate (actual time=5.380..6.115 rows=24.00 loops=1)
+        Group Key: description
+        Buffers: shared hit=2279
+        ->  Sort (actual time=5.320..5.491 rows=4680.00 loops=1)
+              Sort Key: description
+              Sort Method: quicksort  Memory: 444kB
+              Buffers: shared hit=2279
+              ->  Bitmap Heap Scan on sales (actual time=1.432..4.235 rows=4680.00 loops=1)
+                    Recheck Cond: (description ~~* '%babushka%'::text)
+                    Heap Blocks: exact=2253
+                    Buffers: shared hit=2279
+                    ->  Bitmap Index Scan on sales_description_trgm (actual time=1.205..1.205 rows=4680.00 loops=1)
+                          Index Cond: (description ~~* '%babushka%'::text)
+                          Index Searches: 1
+                          Buffers: shared hit=26
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.131 ms
+Execution Time: 6.228 ms

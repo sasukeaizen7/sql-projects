@@ -48,12 +48,12 @@ ORDER BY name, year;
 -- When was each name at its peak? (ARG_MAX), for the 25 most given names since 1950.
 WITH totals AS (
     SELECT name, sex, sum(babies) AS babies FROM births WHERE year >= 1950 GROUP BY name, sex
-    ORDER BY babies DESC LIMIT 25
+    ORDER BY babies DESC, name, sex LIMIT 25
 )
 SELECT b.name, b.sex, t.babies AS babies_since_1950, arg_max(b.year, b.babies) AS peak_year, max(b.babies) AS peak_babies
 FROM births b JOIN totals t USING (name, sex)
 GROUP BY b.name, b.sex, t.babies
-ORDER BY peak_year;
+ORDER BY peak_year, b.name;
 
 -- name: risers
 -- Fastest-growing names over the last decade (2014 -> 2024, at least 500 babies in 2024).

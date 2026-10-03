@@ -1,0 +1,11 @@
+zone_a,zone_b,a_to_b,b_to_a,ratio
+JFK Airport,Clinton East,3180,833,3.8
+JFK Airport,Midtown South,3000,983,3.1
+Upper East Side North,East Harlem South,4837,1621,3.0
+Upper East Side South,East Harlem South,2387,846,2.8
+Yorkville West,East Harlem South,3062,1097,2.8
+LaGuardia Airport,Midtown South,2394,886,2.7
+JFK Airport,Murray Hill,2367,996,2.4
+JFK Airport,LaGuardia Airport,2183,951,2.3
+Penn Station/Madison Sq West,UN/Turtle Bay South,2222,1018,2.2
+LaGuardia Airport,Upper East Side North,2097,941,2.2

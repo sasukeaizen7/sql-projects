@@ -1,0 +1,33 @@
+-- non_sargable: Pitfall: the same day written as a cast on the column. The B-tree on pickup_at exists but cannot be
+
+=== BEFORE (constraint indexes only) ===
+Finalize Aggregate (actual time=104.034..109.729 rows=1.00 loops=1)
+  Buffers: shared hit=16012 read=20100 written=59
+  ->  Gather (actual time=103.901..109.719 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16012 read=20100 written=59
+        ->  Partial Aggregate (actual time=87.996..87.996 rows=1.00 loops=3)
+              Buffers: shared hit=16012 read=20100 written=59
+              ->  Parallel Seq Scan on trips (actual time=10.416..85.670 rows=24914.00 loops=3)
+                    Filter: ((pickup_at)::date = '2024-01-15'::date)
+                    Rows Removed by Filter: 930950
+                    Buffers: shared hit=16012 read=20100 written=59
+Planning Time: 0.076 ms
+Execution Time: 109.761 ms
+
+=== AFTER: CREATE INDEX trips_pickup_btree ON trips (pickup_at) ===
+Finalize Aggregate (actual time=103.816..109.601 rows=1.00 loops=1)
+  Buffers: shared hit=16012 read=20100 written=222
+  ->  Gather (actual time=103.687..109.591 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16012 read=20100 written=222
+        ->  Partial Aggregate (actual time=85.602..85.602 rows=1.00 loops=3)
+              Buffers: shared hit=16012 read=20100 written=222
+              ->  Parallel Seq Scan on trips (actual time=17.964..83.470 rows=24914.00 loops=3)
+                    Filter: ((pickup_at)::date = '2024-01-15'::date)
+                    Rows Removed by Filter: 930950
+                    Buffers: shared hit=16012 read=20100 written=222
+Planning Time: 0.089 ms
+Execution Time: 109.631 ms

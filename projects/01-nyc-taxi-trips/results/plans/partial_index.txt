@@ -1,0 +1,35 @@
+-- partial_index: Disputed trips above $100. A partial index only stores the 0.8% of rows that are disputes,
+
+=== BEFORE (constraint indexes only) ===
+Gather Merge (actual time=115.169..120.744 rows=276.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=16104 read=20098
+  ->  Sort (actual time=98.599..98.603 rows=92.00 loops=3)
+        Sort Key: total_amount DESC, trip_id
+        Sort Method: quicksort  Memory: 28kB
+        Buffers: shared hit=16104 read=20098
+        Worker 0:  Sort Method: quicksort  Memory: 30kB
+        Worker 1:  Sort Method: quicksort  Memory: 28kB
+        ->  Parallel Seq Scan on trips (actual time=2.791..98.457 rows=92.00 loops=3)
+              Filter: ((total_amount > '100'::numeric) AND (payment = 'Dispute'::text))
+              Rows Removed by Filter: 955772
+              Buffers: shared hit=16014 read=20098
+Planning Time: 0.106 ms
+Execution Time: 120.779 ms
+
+=== AFTER: CREATE INDEX trips_dispute_amount ON trips (total_amount) WHERE payment = 'Dispute' ===
+Sort (actual time=0.286..0.296 rows=276.00 loops=1)
+  Sort Key: total_amount DESC, trip_id
+  Sort Method: quicksort  Memory: 37kB
+  Buffers: shared hit=278
+  ->  Bitmap Heap Scan on trips (actual time=0.093..0.212 rows=276.00 loops=1)
+        Recheck Cond: ((total_amount > '100'::numeric) AND (payment = 'Dispute'::text))
+        Heap Blocks: exact=275
+        Buffers: shared hit=278
+        ->  Bitmap Index Scan on trips_dispute_amount (actual time=0.045..0.045 rows=276.00 loops=1)
+              Index Cond: (total_amount > '100'::numeric)
+              Index Searches: 1
+              Buffers: shared hit=3
+Planning Time: 0.120 ms
+Execution Time: 0.320 ms

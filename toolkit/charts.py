@@ -119,3 +119,34 @@ def line(ax, x, y, label=None, color=PALETTE[0], end_label: bool = True, fmt=tho
             xy=(list(x)[-1], list(y)[-1]), xytext=(6, 0), textcoords="offset points",
             va="center", fontsize=9, color=INK_2,
         )
+
+
+def index_benchmark(df, path: Path, source: str, title: str) -> None:
+    """Dumbbell chart of an index benchmark (results/index_benchmark.csv): query time before -> after
+    its index, on a log scale (times span four orders of magnitude), speed-up labelled at the right."""
+    from matplotlib.ticker import FixedLocator, NullLocator
+
+    df = df.dropna(subset=["after_ms"]).iloc[::-1]
+    fig, ax = plt.subplots(figsize=(10, 0.42 * len(df) + 1.2))
+    y = range(len(df))
+    for i, (b, a) in enumerate(zip(df["before_ms"], df["after_ms"])):
+        ax.plot([b, a], [i, i], color=GRID, linewidth=3, solid_capstyle="round", zorder=1)
+    ax.scatter(df["before_ms"], y, color=MUTED, s=36, zorder=2, label="Before (primary keys only)")
+    ax.scatter(df["after_ms"], y, color=PALETTE[0], s=36, zorder=3, label="After creating the index")
+    ax.set_xscale("log")
+    ticks = [t for t in (0.01, 0.1, 1, 10, 100, 1000, 10000)
+             if df[["before_ms", "after_ms"]].min().min() / 3 <= t <= df[["before_ms", "after_ms"]].max().max() * 3]
+    ax.xaxis.set_major_locator(FixedLocator(ticks))
+    ax.xaxis.set_minor_locator(NullLocator())
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _p: f"{v:g} ms"))
+    ax.set_yticks(list(y), df["name"].str.replace("_", " "))
+    ax.tick_params(axis="y", length=0)
+    ax.grid(axis="y", visible=False)
+    xmax = df[["before_ms", "after_ms"]].max().max() * 4
+    ax.set_xlim(right=xmax)
+    for i, s in enumerate(df["speedup"]):
+        label = f"×{s:,.0f}" if s >= 10 else (f"×{s:.1f}" if s >= 1.15 else "no gain")
+        ax.text(xmax, i, label, va="center", ha="right", fontsize=9, color=INK if s >= 1.15 else MUTED)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.06), ncol=2)
+    ax.set_title(title)
+    save(fig, path, source, "PostgreSQL query time, median of 5 runs after a warm-up (log scale)")

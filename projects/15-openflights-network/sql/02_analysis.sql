@@ -86,7 +86,8 @@ SELECT a.iata AS origin, b.iata AS destination, b.city, b.country, b.lat, b.lon,
 FROM edges e
 JOIN airports a ON a.airport_id = e.src_id
 JOIN airports b ON b.airport_id = e.dst_id
-WHERE a.iata IN ('CDG', 'ORY');
+WHERE a.iata IN ('CDG', 'ORY')
+ORDER BY a.iata, b.iata;
 
 -- name: domestic_share
 -- Share of domestic routes by country (countries with 200+ routes).
@@ -97,3 +98,67 @@ GROUP BY src_country
 HAVING count(*) >= 200
 ORDER BY routes DESC
 LIMIT 12;
+
+-- ============================================================================================
+-- Advanced SQL (the shortest-path view shortest_from_cdg is built in sql/01_load.sql)
+-- ============================================================================================
+
+-- name: shortest_itineraries
+-- The shortest flying route from Paris-CDG to remote places, with the itinerary rebuilt from the path.
+SELECT city, country, legs,
+       round(km, 0)                                   AS flown_km,
+       round(straight_km, 0)                          AS straight_km,
+       round(greatest(100.0 * (km / straight_km - 1), 0), 1) AS detour_pct,
+       array_to_string(path, ' → ')                   AS itinerary
+FROM shortest_from_cdg
+WHERE iata IN ('SYD', 'AKL', 'IPC', 'HNL', 'USH', 'LYR', 'PPT', 'MLE', 'ANC', 'CPT')
+ORDER BY flown_km DESC;
+
+-- name: detour_by_legs
+-- How much longer than a straight line is the shortest flying route, by number of legs?
+SELECT legs,
+       count(*)                                                       AS airports,
+       round(greatest(median(100.0 * (km / straight_km - 1)), 0), 1) AS median_detour_pct,
+       round(quantile_cont(100.0 * (km / straight_km - 1), 0.9), 1)   AS p90_detour_pct,
+       round(median(km), 0)                                           AS median_flown_km
+FROM shortest_from_cdg
+WHERE legs > 0
+GROUP BY legs
+ORDER BY legs;
+
+-- name: country_hubs
+-- The 3 biggest hubs of each of the 8 countries with the most departing routes: the LATERAL subquery is evaluated
+-- for each country row and returns its own top 3.
+SELECT c.country, h.rank, h.iata, h.city, h.destinations, h.domestic_pct
+FROM (SELECT src_country AS country, count(*) AS routes
+      FROM routes GROUP BY 1 ORDER BY routes DESC LIMIT 8) c,
+LATERAL (
+    SELECT row_number() OVER (ORDER BY count(*) DESC, a.iata) AS rank,
+           a.iata, a.city,
+           count(*) AS destinations,
+           round(100.0 * avg((b.country = a.country)::INT), 0) AS domestic_pct
+    FROM edges e
+    JOIN airports a ON a.airport_id = e.src_id
+    JOIN airports b ON b.airport_id = e.dst_id
+    WHERE a.country = c.country
+    GROUP BY a.iata, a.city
+    ORDER BY destinations DESC, a.iata
+    LIMIT 3
+) h
+ORDER BY c.routes DESC, h.rank;
+
+-- name: one_way_routes
+-- Routes flown in one direction only (anti-join on the reverse edge). Most are "triangle" routings:
+-- the return goes through a third airport (EXISTS on a 2-leg path back).
+WITH one_way AS (
+    SELECT e.src_id, e.dst_id, e.distance_km
+    FROM edges e
+    WHERE NOT EXISTS (SELECT 1 FROM edges r WHERE r.src_id = e.dst_id AND r.dst_id = e.src_id)
+)
+SELECT count(*)                                                                       AS one_way_routes,
+       round(100.0 * count(*) / (SELECT count(*) FROM edges), 1)                      AS pct_of_routes,
+       count(*) FILTER (WHERE EXISTS (
+           SELECT 1 FROM edges r1 JOIN edges r2 ON r2.src_id = r1.dst_id
+           WHERE r1.src_id = o.dst_id AND r2.dst_id = o.src_id))                      AS return_in_two_legs,
+       round(median(distance_km), 0)                                                  AS median_km
+FROM one_way o;

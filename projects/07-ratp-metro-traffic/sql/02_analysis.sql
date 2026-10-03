@@ -44,7 +44,7 @@ SELECT CASE WHEN city = 'Paris' THEN coalesce(CAST(arrondissement AS VARCHAR), '
        round(100.0 * sum(e2021) / sum(e2019), 1)   AS recovery_pct
 FROM per_station
 GROUP BY area
-ORDER BY recovery_pct;
+ORDER BY recovery_pct, area;
 
 -- name: rank_movers
 -- Metro stations that climbed or fell most in the ranking between 2013 and 2019 (DENSE_RANK per year).

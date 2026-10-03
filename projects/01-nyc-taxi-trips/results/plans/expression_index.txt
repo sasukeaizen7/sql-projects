@@ -1,0 +1,27 @@
+-- expression_index: Fix 1 (fix 2 is to rewrite the filter as a range, as in one_day_btree): index the expression itself.
+
+=== BEFORE (constraint indexes only) ===
+Finalize Aggregate (actual time=102.816..108.393 rows=1.00 loops=1)
+  Buffers: shared hit=16012 read=20100
+  ->  Gather (actual time=102.688..108.383 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16012 read=20100
+        ->  Partial Aggregate (actual time=87.173..87.174 rows=1.00 loops=3)
+              Buffers: shared hit=16012 read=20100
+              ->  Parallel Seq Scan on trips (actual time=9.766..84.871 rows=24914.00 loops=3)
+                    Filter: ((pickup_at)::date = '2024-01-15'::date)
+                    Rows Removed by Filter: 930950
+                    Buffers: shared hit=16012 read=20100
+Planning Time: 0.077 ms
+Execution Time: 108.424 ms
+
+=== AFTER: CREATE INDEX trips_pickup_day ON trips ((pickup_at::date)) ===
+Aggregate (actual time=15.964..15.965 rows=1.00 loops=1)
+  Buffers: shared hit=1036
+  ->  Index Scan using trips_pickup_day on trips (actual time=0.009..7.079 rows=74742.00 loops=1)
+        Index Cond: ((pickup_at)::date = '2024-01-15'::date)
+        Index Searches: 1
+        Buffers: shared hit=1036
+Planning Time: 0.064 ms
+Execution Time: 15.981 ms

@@ -1,0 +1,17 @@
+market,year,customers,revenue,avg_order_value
+Rest of Europe,2009,46,67537.0,888.64
+Rest of Europe,2010,288,1156038.0,871.82
+Rest of Europe,2011,366,1202067.0,752.23
+Rest of Europe,All years,453,2425642.0,808.55
+Rest of world,2009,3,715.0,238.41
+Rest of world,2010,45,74084.0,881.95
+Rest of world,2011,39,196049.0,2000.5
+Rest of world,All years,62,270849.0,1464.05
+United Kingdom,2009,902,600559.0,425.93
+United Kingdom,2010,3860,6764014.0,409.79
+United Kingdom,2011,3800,6330678.0,417.43
+United Kingdom,All years,5325,13695251.0,413.98
+All markets,2009,951,668812.0,449.17
+All markets,2010,4191,7994136.0,446.2
+All markets,2011,4203,7728795.0,458.36
+All markets,All years,5838,16391742.0,451.97

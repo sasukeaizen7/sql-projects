@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import matplotlib.pyplot as plt  # noqa: E402
 
 from toolkit import Project, style, save, bar_h, PALETTE, INK, INK_2, GRID  # noqa: E402
+from toolkit.charts import index_benchmark  # noqa: E402
 
 SOURCE = "OpenFlights.org airports, airlines and routes (route data as of June 2014), ODbL"
 PARIS = (2.55, 49.01)  # CDG
@@ -57,6 +58,11 @@ def main(p: Project) -> None:
     save(fig, p.images / "reach_from_paris.png", SOURCE,
          "Share of airports with departures reachable from Paris, computed with a recursive SQL query")
 
+
+    # 4. PostgreSQL index benchmark.
+    if (p.results / "index_benchmark.csv").exists():
+        index_benchmark(p.result("index_benchmark"), p.images / "index_benchmark.png", SOURCE,
+                        "A GiST index finds the nearest airports over 100x faster")
 
 if __name__ == "__main__":
     main(Project.here(__file__))

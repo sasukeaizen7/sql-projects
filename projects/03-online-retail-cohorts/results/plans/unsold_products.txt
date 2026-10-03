@@ -1,0 +1,38 @@
+-- unsold_products: Anti-join: products with no sale since June 2011. With an index on (stock_code, invoiced_at) every
+
+=== BEFORE (constraint indexes only) ===
+Aggregate (actual time=86.458..86.459 rows=1.00 loops=1)
+  Buffers: shared hit=12030
+  ->  Hash Right Anti Join (actual time=86.240..86.397 rows=1380.00 loops=1)
+        Hash Cond: (s.stock_code = p.stock_code)
+        Buffers: shared hit=12030
+        ->  Seq Scan on sales s (actual time=34.359..57.326 rows=249343.00 loops=1)
+              Filter: (invoiced_at >= '2011-06-01 00:00:00'::timestamp without time zone)
+              Rows Removed by Filter: 529441
+              Buffers: shared hit=11992
+        ->  Hash (actual time=0.756..0.757 rows=4611.00 loops=1)
+              Buckets: 8192  Batches: 1  Memory Usage: 237kB
+              Buffers: shared hit=38
+              ->  Seq Scan on products p (actual time=0.009..0.305 rows=4611.00 loops=1)
+                    Buffers: shared hit=38
+Planning:
+  Buffers: shared hit=6
+Planning Time: 0.199 ms
+Execution Time: 86.490 ms
+
+=== AFTER: CREATE INDEX sales_product_time ON sales (stock_code, invoiced_at) ===
+Aggregate (actual time=19.361..19.361 rows=1.00 loops=1)
+  Buffers: shared hit=13879
+  ->  Nested Loop Anti Join (actual time=0.014..19.281 rows=1380.00 loops=1)
+        Buffers: shared hit=13879
+        ->  Seq Scan on products p (actual time=0.007..0.223 rows=4611.00 loops=1)
+              Buffers: shared hit=38
+        ->  Index Only Scan using sales_product_time on sales s (actual time=0.004..0.004 rows=0.70 loops=4611)
+              Index Cond: ((stock_code = p.stock_code) AND (invoiced_at >= '2011-06-01 00:00:00'::timestamp without time zone))
+              Heap Fetches: 0
+              Index Searches: 4611
+              Buffers: shared hit=13841
+Planning:
+  Buffers: shared hit=14
+Planning Time: 0.212 ms
+Execution Time: 19.381 ms

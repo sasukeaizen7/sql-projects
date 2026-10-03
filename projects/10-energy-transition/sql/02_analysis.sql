@@ -38,7 +38,7 @@ FROM country_year
 WHERE country IN (SELECT country FROM country_year WHERE year = 2024 AND population >= 10e6)
 GROUP BY country
 HAVING gain_pp IS NOT NULL
-ORDER BY gain_pp DESC
+ORDER BY gain_pp DESC, country
 LIMIT 12;
 
 -- name: coal_exit

@@ -1,0 +1,11 @@
+city,country,legs,flown_km,straight_km,detour_pct,itinerary
+Auckland,New Zealand,2,18546.0,18541.0,0.0,CDG → NRT → AKL
+Sydney,Australia,2,16951.0,16944.0,0.0,CDG → SGN → SYD
+Papeete,French Polynesia,2,15714.0,15714.0,0.0,CDG → LAX → PPT
+Easter Island,Chile,2,15425.0,13817.0,11.6,CDG → SCL → IPC
+Ushuaia,Argentina,2,13451.0,13294.0,1.2,CDG → EZE → USH
+Honolulu,United States,3,12279.0,11958.0,2.7,CDG → MAN → YVR → HNL
+Anchorage,United States,2,10375.0,7519.0,38.0,CDG → SEA → ANC
+Cape Town,South Africa,2,9364.0,9363.0,0.0,CDG → LAD → CPT
+Male,Maldives,2,8277.0,8277.0,0.0,CDG → AUH → MLE
+Svalbard,Norway,2,3370.0,3294.0,2.3,CDG → OSL → LYR

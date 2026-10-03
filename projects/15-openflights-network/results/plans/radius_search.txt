@@ -1,0 +1,31 @@
+-- radius_search: Every airport within 100 km of Frankfurt: earth_box() is a bounding cube the GiST index can search,
+
+=== BEFORE (constraint indexes only) ===
+Sort (actual time=18.152..18.153 rows=25.00 loops=1)
+  Sort Key: airport_id
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=97
+  ->  Seq Scan on airports (actual time=1.208..18.143 rows=25.00 loops=1)
+        Filter: (('(3951217.094835722, 510563.68110704655, 4788343.1386311725),(4151215.046385047, 710561.6326563719, 4988341.090180498)'::cube @> (ll_to_earth(lat, lon))::cube) AND (sec_to_gc(cube_distance('(4051216.0706103845, 610562.6568817092, 4888342.114405835)'::cube, (ll_to_earth(lat, lon))::cube)) <= '100000'::double precision))
+        Rows Removed by Filter: 7673
+        Buffers: shared hit=97
+Planning Time: 0.190 ms
+Execution Time: 18.164 ms
+
+=== AFTER: CREATE INDEX airports_earth ON airports USING gist (ll_to_earth(lat, lon)) ===
+Sort (actual time=0.142..0.143 rows=25.00 loops=1)
+  Sort Key: airport_id
+  Sort Method: quicksort  Memory: 26kB
+  Buffers: shared hit=21
+  ->  Bitmap Heap Scan on airports (actual time=0.030..0.138 rows=25.00 loops=1)
+        Recheck Cond: ('(3951217.094835722, 510563.68110704655, 4788343.1386311725),(4151215.046385047, 710561.6326563719, 4988341.090180498)'::cube @> (ll_to_earth(lat, lon))::cube)
+        Filter: (sec_to_gc(cube_distance('(4051216.0706103845, 610562.6568817092, 4888342.114405835)'::cube, (ll_to_earth(lat, lon))::cube)) <= '100000'::double precision)
+        Rows Removed by Filter: 8
+        Heap Blocks: exact=9
+        Buffers: shared hit=21
+        ->  Bitmap Index Scan on airports_earth (actual time=0.019..0.019 rows=33.00 loops=1)
+              Index Cond: ((ll_to_earth(lat, lon))::cube <@ '(3951217.094835722, 510563.68110704655, 4788343.1386311725),(4151215.046385047, 710561.6326563719, 4988341.090180498)'::cube)
+              Index Searches: 1
+              Buffers: shared hit=12
+Planning Time: 0.101 ms
+Execution Time: 0.150 ms

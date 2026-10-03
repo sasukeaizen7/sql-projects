@@ -1,0 +1,35 @@
+-- zone_time_window: Every trip from Times Square between 17:00 and 19:00 on Friday 12 January, in pickup order.
+
+=== BEFORE (constraint indexes only) ===
+Gather Merge (actual time=91.815..97.782 rows=385.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=16105 read=20097 written=262
+  ->  Sort (actual time=75.563..75.569 rows=128.33 loops=3)
+        Sort Key: pickup_at, trip_id
+        Sort Method: quicksort  Memory: 31kB
+        Buffers: shared hit=16105 read=20097 written=262
+        Worker 0:  Sort Method: quicksort  Memory: 32kB
+        Worker 1:  Sort Method: quicksort  Memory: 28kB
+        ->  Parallel Seq Scan on trips (actual time=28.822..75.485 rows=128.33 loops=3)
+              Filter: ((pickup_at >= '2024-01-12 17:00:00'::timestamp without time zone) AND (pickup_at < '2024-01-12 19:00:00'::timestamp without time zone) AND (pickup_zone_id = 230))
+              Rows Removed by Filter: 955736
+              Buffers: shared hit=16015 read=20097 written=262
+Planning Time: 0.084 ms
+Execution Time: 97.819 ms
+
+=== AFTER: CREATE INDEX trips_zone_time ON trips (pickup_zone_id, pickup_at) ===
+Sort (actual time=0.167..0.181 rows=385.00 loops=1)
+  Sort Key: pickup_at, trip_id
+  Sort Method: quicksort  Memory: 42kB
+  Buffers: shared hit=155
+  ->  Bitmap Heap Scan on trips (actual time=0.034..0.133 rows=385.00 loops=1)
+        Recheck Cond: ((pickup_zone_id = 230) AND (pickup_at >= '2024-01-12 17:00:00'::timestamp without time zone) AND (pickup_at < '2024-01-12 19:00:00'::timestamp without time zone))
+        Heap Blocks: exact=150
+        Buffers: shared hit=155
+        ->  Bitmap Index Scan on trips_zone_time (actual time=0.022..0.022 rows=385.00 loops=1)
+              Index Cond: ((pickup_zone_id = 230) AND (pickup_at >= '2024-01-12 17:00:00'::timestamp without time zone) AND (pickup_at < '2024-01-12 19:00:00'::timestamp without time zone))
+              Index Searches: 1
+              Buffers: shared hit=5
+Planning Time: 0.060 ms
+Execution Time: 0.204 ms

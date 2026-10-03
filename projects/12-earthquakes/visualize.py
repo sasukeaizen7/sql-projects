@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap  # noqa: E402
 
-from toolkit import Project, style, save, PALETTE, INK_2, SURFACE  # noqa: E402
+from toolkit import Project, style, save, bar_h, PALETTE, INK_2, SURFACE  # noqa: E402
 from toolkit.charts import BLUES  # noqa: E402
 
 SOURCE = "USGS Earthquake Hazards Program, ComCat catalog (public domain), 2000-2025"
@@ -62,6 +62,14 @@ def main(p: Project) -> None:
     ax.grid(axis="x", visible=False)
     ax.set_title("About 15 major (M7+) earthquakes a year, with no upward trend")
     save(fig, p.images / "m7_per_year.png", SOURCE, "Number of earthquakes of magnitude 7 or more per year")
+
+    # 4. Aftershock sequences of the largest mainshocks (spatio-temporal self-join).
+    a = p.result("aftershock_sequences").head(10)
+    labels = a["region"].str.replace("Sumatra - Andaman Islands", "Sumatra") + " " + a["date_utc"].str[:4] + " (M" + a["mag"].map("{:.1f}".format) + ")"
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    bar_h(ax, labels, a["aftershocks_30d"], highlight=0)
+    ax.set_title("Tohoku 2011 set off 528 M5+ aftershocks in 30 days")
+    save(fig, p.images / "aftershocks.png", SOURCE, "M5+ events within 300 km and 30 days after each M7.8+ mainshock, top 10")
 
 
 if __name__ == "__main__":

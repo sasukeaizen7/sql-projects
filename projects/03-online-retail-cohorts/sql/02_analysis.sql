@@ -51,9 +51,11 @@ WITH snapshot AS (SELECT max(invoiced_at) + INTERVAL 1 DAY AS ts FROM sales),
 scores AS (
     SELECT c.customer_id, c.revenue,
            date_diff('day', c.last_purchase_at, (SELECT ts FROM snapshot)) AS recency_days,
-           ntile(5) OVER (ORDER BY c.last_purchase_at)  AS r,   -- 5 = bought most recently
-           ntile(5) OVER (ORDER BY c.orders)            AS f,
-           ntile(5) OVER (ORDER BY c.revenue)           AS m
+           -- Quintile scores 1-5 from percent_rank(), not ntile(): 1,614 customers have exactly one order,
+           -- and ntile() would split those ties between scores 1 and 2 arbitrarily. Equal values, equal scores.
+           least(5, 1 + floor(5 * percent_rank() OVER (ORDER BY c.last_purchase_at)))::INT AS r,  -- 5 = most recent
+           least(5, 1 + floor(5 * percent_rank() OVER (ORDER BY c.orders)))::INT           AS f,
+           least(5, 1 + floor(5 * percent_rank() OVER (ORDER BY c.revenue)))::INT          AS m
     FROM customers c
 ), segmented AS (
     SELECT *,
@@ -113,3 +115,101 @@ FROM sales
 GROUP BY country
 ORDER BY revenue DESC
 LIMIT 10;
+
+-- ============================================================================================
+-- Advanced SQL
+-- ============================================================================================
+
+-- name: repeat_purchase
+-- How long until a customer comes back? Days between consecutive orders (LAG over each customer's
+-- orders), by order number, and how many customers ever reach that order.
+WITH orders AS (
+    SELECT customer_id, invoice, min(invoiced_at) AS ordered_at
+    FROM sales
+    GROUP BY ALL
+), numbered AS (
+    SELECT customer_id,
+           row_number() OVER w                                         AS order_number,
+           date_diff('day', lag(ordered_at) OVER w, ordered_at)        AS days_since_previous
+    FROM orders
+    WINDOW w AS (PARTITION BY customer_id ORDER BY ordered_at, invoice)
+)
+SELECT order_number,
+       count(*)                                                          AS customers,
+       round(100.0 * count(*) / max(count(*)) OVER (), 1)                AS pct_of_customers,
+       median(days_since_previous)                                       AS median_days_since_previous,
+       round(avg(days_since_previous), 1)                                AS avg_days_since_previous
+FROM numbered
+WHERE order_number <= 10
+GROUP BY order_number
+ORDER BY order_number;
+
+-- name: market_basket
+-- Which products are bought together? Self-join of invoice lines into product pairs, then
+-- support, confidence and lift (lift > 1: the pair is bought together more often than chance).
+WITH baskets AS (
+    SELECT DISTINCT invoice, stock_code FROM sales
+), n AS (SELECT count(DISTINCT invoice) AS invoices FROM baskets),
+item AS (
+    SELECT stock_code, count(*) AS invoices FROM baskets GROUP BY stock_code
+    HAVING count(*) >= 300                     -- products in 300+ orders keep the self-join small
+), pairs AS (
+    SELECT a.stock_code AS a, b.stock_code AS b, count(*) AS together
+    FROM baskets a
+    JOIN baskets b ON b.invoice = a.invoice AND b.stock_code > a.stock_code
+    WHERE a.stock_code IN (SELECT stock_code FROM item) AND b.stock_code IN (SELECT stock_code FROM item)
+    GROUP BY ALL
+    HAVING count(*) >= 200
+)
+SELECT pa.description AS product_a, pb.description AS product_b,
+       p.together                                                   AS orders_together,
+       round(100.0 * p.together / n.invoices, 2)                    AS support_pct,
+       round(100.0 * p.together / ia.invoices, 1)                   AS confidence_a_to_b_pct,
+       round(p.together * n.invoices / (ia.invoices * ib.invoices), 1) AS lift
+FROM pairs p, n
+JOIN item ia ON ia.stock_code = p.a
+JOIN item ib ON ib.stock_code = p.b
+JOIN products pa ON pa.stock_code = p.a
+JOIN products pb ON pb.stock_code = p.b
+ORDER BY lift DESC
+LIMIT 10;
+
+-- name: activity_streaks
+-- Gaps and islands: each customer's runs of consecutive active months. A run is a set of months whose
+-- (month index - row number) is constant. How long is each customer's longest streak?
+WITH active AS (
+    SELECT DISTINCT customer_id, date_trunc('month', invoiced_at) AS month FROM sales
+), islands AS (
+    SELECT customer_id, month,
+           date_diff('month', DATE '2009-12-01', month)
+             - row_number() OVER (PARTITION BY customer_id ORDER BY month) AS island
+    FROM active
+), runs AS (
+    SELECT customer_id, island, count(*) AS months, min(month) AS run_start
+    FROM islands GROUP BY ALL
+), longest AS (
+    SELECT customer_id, max(months) AS longest_streak FROM runs GROUP BY customer_id
+)
+SELECT CASE WHEN longest_streak >= 12 THEN '12+' ELSE longest_streak::VARCHAR END AS longest_streak_months,
+       count(*) AS customers,
+       round(100.0 * count(*) / sum(count(*)) OVER (), 1) AS pct,
+       round(avg(c.revenue), 0) AS avg_revenue
+FROM longest l JOIN customers c USING (customer_id)
+GROUP BY ALL
+ORDER BY min(longest_streak);
+
+-- name: revenue_cube
+-- Revenue by market and year with every subtotal (CUBE = all combinations of the grouping columns).
+-- 2009 is December only and 2011 stops on 9 December.
+SELECT CASE WHEN grouping(market) = 1 THEN 'All markets' ELSE market END AS market,
+       CASE WHEN grouping(year) = 1 THEN 'All years' ELSE year::VARCHAR END AS year,
+       count(DISTINCT customer_id) AS customers,
+       round(sum(revenue), 0) AS revenue,
+       round(sum(revenue) / count(DISTINCT invoice), 2) AS avg_order_value
+FROM (SELECT *, CASE WHEN country = 'United Kingdom' THEN 'United Kingdom'
+                     WHEN country IN ('Austria','Belgium','Cyprus','Denmark','Finland','France','Germany','Greece','Ireland','EIRE','Italy','Lithuania','Malta','Netherlands','Poland','Portugal','Spain','Sweden','Czech Republic','European Community','Channel Islands','Iceland','Norway','Switzerland') THEN 'Rest of Europe'
+                     ELSE 'Rest of world' END AS market,
+             year(invoiced_at) AS year
+      FROM sales)
+GROUP BY CUBE (market, year)
+ORDER BY grouping(market), market, grouping(year), year;

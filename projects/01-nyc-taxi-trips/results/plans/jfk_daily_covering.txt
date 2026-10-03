@@ -1,0 +1,38 @@
+-- jfk_daily_covering: Same query with a covering index: INCLUDE stores the other two columns in the index leaves, so
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=128.024..171.793 rows=31.00 loops=1)
+  Group Key: ((pickup_at)::date)
+  Buffers: shared hit=16188 read=20000, temp read=213 written=214
+  ->  Gather Merge (actual time=126.669..155.615 rows=138254.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16188 read=20000, temp read=213 written=214
+        ->  Sort (actual time=76.420..78.802 rows=46084.67 loops=3)
+              Sort Key: ((pickup_at)::date)
+              Sort Method: quicksort  Memory: 3276kB
+              Buffers: shared hit=16188 read=20000, temp read=213 written=214
+              Worker 0:  Sort Method: quicksort  Memory: 25kB
+              Worker 1:  Sort Method: external merge  Disk: 1704kB
+              ->  Parallel Seq Scan on trips (actual time=0.008..70.764 rows=46084.67 loops=3)
+                    Filter: (pickup_zone_id = 132)
+                    Rows Removed by Filter: 909779
+                    Buffers: shared hit=16112 read=20000
+Planning Time: 0.092 ms
+Execution Time: 172.042 ms
+
+=== AFTER: CREATE INDEX trips_pickup_zone_cover ON trips (pickup_zone_id) INCLUDE (pickup_at, total_amount) ===
+GroupAggregate (actual time=38.846..63.175 rows=31.00 loops=1)
+  Group Key: ((pickup_at)::date)
+  Buffers: shared hit=686, temp read=356 written=357
+  ->  Sort (actual time=37.863..46.764 rows=138254.00 loops=1)
+        Sort Key: ((pickup_at)::date)
+        Sort Method: external merge  Disk: 2848kB
+        Buffers: shared hit=686, temp read=356 written=357
+        ->  Index Only Scan using trips_pickup_zone_cover on trips (actual time=0.019..18.269 rows=138254.00 loops=1)
+              Index Cond: (pickup_zone_id = 132)
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=686
+Planning Time: 0.102 ms
+Execution Time: 69.382 ms

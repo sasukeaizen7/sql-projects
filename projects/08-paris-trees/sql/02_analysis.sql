@@ -68,7 +68,7 @@ SELECT species_fr, count(*) AS trees, round(median(height_m), 0) AS median_heigh
 FROM trees
 WHERE is_remarkable
 GROUP BY species_fr
-ORDER BY trees DESC
+ORDER BY trees DESC, species_fr
 LIMIT 10;
 
 -- name: stages

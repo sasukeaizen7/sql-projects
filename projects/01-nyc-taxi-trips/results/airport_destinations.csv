@@ -1,0 +1,7 @@
+airport,rank,destination,borough,trips,share_pct,avg_total_usd
+JFK Airport,1,Times Sq/Theatre District,Manhattan,5749,4.2,94.15
+JFK Airport,2,Clinton East,Manhattan,3180,2.3,93.47
+JFK Airport,3,Midtown South,Manhattan,3000,2.2,95.66
+LaGuardia Airport,1,Times Sq/Theatre District,Manhattan,5395,6.2,75.91
+LaGuardia Airport,2,Midtown Center,Manhattan,3255,3.7,73.65
+LaGuardia Airport,3,Midtown East,Manhattan,2566,2.9,69.11

@@ -1,0 +1,33 @@
+-- outbound_reach: Reference: airports reachable from Paris-CDG in at most 2 flights (recursive CTE). No index needed:
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=3.826..3.992 rows=3.00 loops=1)
+  Group Key: reach.legs
+  Buffers: shared hit=500
+  CTE reach
+    ->  Recursive Union (actual time=0.007..3.230 rows=2176.00 loops=1)
+          Storage: Memory  Maximum Storage: 100kB
+          Buffers: shared hit=500
+          ->  Index Scan using airports_iata_key on airports (actual time=0.006..0.006 rows=1.00 loops=1)
+                Index Cond: (iata = 'CDG'::text)
+                Index Searches: 1
+                Buffers: shared hit=3
+          ->  Nested Loop (actual time=0.019..0.621 rows=5278.67 loops=3)
+                Buffers: shared hit=497
+                ->  WorkTable Scan on reach r (actual time=0.016..0.019 rows=79.33 loops=3)
+                      Filter: (legs < 2)
+                      Rows Removed by Filter: 646
+                ->  Index Only Scan using edges_pkey on edges e (actual time=0.001..0.004 rows=66.54 loops=238)
+                      Index Cond: (src_id = r.airport_id)
+                      Heap Fetches: 0
+                      Index Searches: 238
+                      Buffers: shared hit=497
+  ->  Sort (actual time=3.824..3.871 rows=2176.00 loops=1)
+        Sort Key: reach.legs, reach.airport_id
+        Sort Method: quicksort  Memory: 148kB
+        Buffers: shared hit=500
+        ->  CTE Scan on reach (actual time=0.007..3.481 rows=2176.00 loops=1)
+              Storage: Memory  Maximum Storage: 101kB
+              Buffers: shared hit=500
+Planning Time: 0.069 ms
+Execution Time: 4.064 ms

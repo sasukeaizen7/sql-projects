@@ -1,0 +1,33 @@
+-- top_n: The 10 most expensive trips. Without an index Postgres reads and sorts (top-N heapsort) all 2.87M
+
+=== BEFORE (constraint indexes only) ===
+Limit (actual time=203.477..209.299 rows=10.00 loops=1)
+  Buffers: shared hit=16104 read=20098
+  ->  Gather Merge (actual time=203.476..209.296 rows=10.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16104 read=20098
+        ->  Sort (actual time=188.418..188.419 rows=7.67 loops=3)
+              Sort Key: total_amount DESC, trip_id
+              Sort Method: top-N heapsort  Memory: 26kB
+              Buffers: shared hit=16104 read=20098
+              Worker 0:  Sort Method: top-N heapsort  Memory: 26kB
+              Worker 1:  Sort Method: top-N heapsort  Memory: 26kB
+              ->  Parallel Seq Scan on trips (actual time=0.010..106.851 rows=955864.00 loops=3)
+                    Buffers: shared hit=16014 read=20098
+Planning Time: 0.069 ms
+Execution Time: 209.321 ms
+
+=== AFTER: CREATE INDEX trips_total_desc ON trips (total_amount DESC) ===
+Limit (actual time=0.020..0.022 rows=10.00 loops=1)
+  Buffers: shared hit=14
+  ->  Incremental Sort (actual time=0.020..0.020 rows=10.00 loops=1)
+        Sort Key: total_amount DESC, trip_id
+        Presorted Key: total_amount
+        Full-sort Groups: 1  Sort Method: quicksort  Average Memory: 25kB  Peak Memory: 25kB
+        Buffers: shared hit=14
+        ->  Index Scan using trips_total_desc on trips (actual time=0.009..0.014 rows=11.00 loops=1)
+              Index Searches: 1
+              Buffers: shared hit=14
+Planning Time: 0.043 ms
+Execution Time: 0.030 ms

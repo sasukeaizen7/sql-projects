@@ -1,0 +1,53 @@
+-- fk_join: Trips picked up in Glen Oaks, Queens, found by zone name through the join (40 trips).
+
+=== BEFORE (constraint indexes only) ===
+Gather Merge (actual time=115.933..122.075 rows=40.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=16038 read=20113
+  ->  Sort (actual time=99.694..99.696 rows=13.33 loops=3)
+        Sort Key: t.pickup_at, t.trip_id
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=16038 read=20113
+        Worker 0:  Sort Method: quicksort  Memory: 25kB
+        Worker 1:  Sort Method: quicksort  Memory: 26kB
+        ->  Hash Join (actual time=22.776..99.644 rows=13.33 loops=3)
+              Hash Cond: (t.pickup_zone_id = z.zone_id)
+              Buffers: shared hit=16008 read=20113
+              ->  Parallel Seq Scan on trips t (actual time=0.421..42.554 rows=955864.00 loops=3)
+                    Buffers: shared hit=15999 read=20113
+              ->  Hash (actual time=0.327..0.327 rows=1.00 loops=3)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=9
+                    ->  Seq Scan on zones z (actual time=0.306..0.324 rows=1.00 loops=3)
+                          Filter: (zone = 'Glen Oaks'::text)
+                          Rows Removed by Filter: 264
+                          Buffers: shared hit=9
+Planning:
+  Buffers: shared hit=4
+Planning Time: 0.174 ms
+Execution Time: 122.108 ms
+
+=== AFTER: CREATE INDEX trips_pickup_zone ON trips (pickup_zone_id) ===
+Sort (actual time=0.066..0.068 rows=40.00 loops=1)
+  Sort Key: t.pickup_at, t.trip_id
+  Sort Method: quicksort  Memory: 27kB
+  Buffers: shared hit=46
+  ->  Nested Loop (actual time=0.029..0.059 rows=40.00 loops=1)
+        Buffers: shared hit=46
+        ->  Seq Scan on zones z (actual time=0.015..0.025 rows=1.00 loops=1)
+              Filter: (zone = 'Glen Oaks'::text)
+              Rows Removed by Filter: 264
+              Buffers: shared hit=3
+        ->  Bitmap Heap Scan on trips t (actual time=0.012..0.027 rows=40.00 loops=1)
+              Recheck Cond: (z.zone_id = pickup_zone_id)
+              Heap Blocks: exact=40
+              Buffers: shared hit=43
+              ->  Bitmap Index Scan on trips_pickup_zone (actual time=0.004..0.004 rows=40.00 loops=1)
+                    Index Cond: (pickup_zone_id = z.zone_id)
+                    Index Searches: 1
+                    Buffers: shared hit=3
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.124 ms
+Execution Time: 0.081 ms

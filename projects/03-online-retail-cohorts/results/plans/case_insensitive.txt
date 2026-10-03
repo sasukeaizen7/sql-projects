@@ -1,0 +1,31 @@
+-- case_insensitive: Exact product name typed in any case. lower(description) = ... needs an index on lower(description).
+
+=== BEFORE (constraint indexes only) ===
+Finalize Aggregate (actual time=58.919..64.183 rows=1.00 loops=1)
+  Buffers: shared hit=11827 read=165
+  ->  Gather (actual time=58.794..64.173 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=11827 read=165
+        ->  Partial Aggregate (actual time=42.431..42.431 rows=1.00 loops=3)
+              Buffers: shared hit=11827 read=165
+              ->  Parallel Seq Scan on sales (actual time=6.462..42.279 rows=1052.33 loops=3)
+                    Filter: (lower(description) = 'regency cakestand 3 tier'::text)
+                    Rows Removed by Filter: 258542
+                    Buffers: shared hit=11827 read=165
+Planning Time: 0.095 ms
+Execution Time: 64.219 ms
+
+=== AFTER: CREATE INDEX sales_description_lower ON sales (lower(description)) ===
+Aggregate (actual time=1.936..1.936 rows=1.00 loops=1)
+  Buffers: shared hit=2757
+  ->  Bitmap Heap Scan on sales (actual time=0.459..1.509 rows=3157.00 loops=1)
+        Recheck Cond: (lower(description) = 'regency cakestand 3 tier'::text)
+        Heap Blocks: exact=2751
+        Buffers: shared hit=2757
+        ->  Bitmap Index Scan on sales_description_lower (actual time=0.196..0.196 rows=3157.00 loops=1)
+              Index Cond: (lower(description) = 'regency cakestand 3 tier'::text)
+              Index Searches: 1
+              Buffers: shared hit=6
+Planning Time: 0.062 ms
+Execution Time: 1.963 ms

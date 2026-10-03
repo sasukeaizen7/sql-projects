@@ -21,7 +21,7 @@ ORDER BY rating;
 SELECT m.title, count(*) AS ratings, round(avg(r.rating), 2) AS avg_rating
 FROM ratings r JOIN movies m USING (movie_id)
 GROUP BY m.title
-ORDER BY avg_rating DESC, ratings DESC
+ORDER BY avg_rating DESC, ratings DESC, m.title
 LIMIT 10;
 
 -- name: weighted_top
@@ -77,5 +77,5 @@ ORDER BY decile;
 SELECT tag, count(*) AS uses, count(DISTINCT movie_id) AS movies
 FROM tags
 GROUP BY tag
-ORDER BY uses DESC
+ORDER BY uses DESC, tag
 LIMIT 10;

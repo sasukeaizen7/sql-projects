@@ -42,7 +42,7 @@ SELECT commune, count(*) AS stations, sum(capacity) AS docks,
 FROM active_stations
 WHERE NOT in_paris
 GROUP BY commune
-ORDER BY stations DESC
+ORDER BY stations DESC, commune
 LIMIT 10;
 
 -- name: station_map

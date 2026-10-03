@@ -1,0 +1,25 @@
+country,rank,iata,city,destinations,domestic_pct
+United States,1,ATL,Atlanta,217,71.0
+United States,2,ORD,Chicago,206,72.0
+United States,3,DFW,Dallas-Fort Worth,187,74.0
+China,1,PEK,Beijing,204,54.0
+China,2,PVG,Shanghai,150,47.0
+China,3,CAN,Guangzhou,146,64.0
+United Kingdom,1,LHR,London,170,4.0
+United Kingdom,2,LGW,London,165,5.0
+United Kingdom,3,STN,London,153,3.0
+Spain,1,BCN,Barcelona,163,17.0
+Spain,2,MAD,Madrid,158,18.0
+Spain,3,PMI,Palma de Mallorca,126,15.0
+Germany,1,FRA,Frankfurt,239,6.0
+Germany,2,MUC,Munich,191,8.0
+Germany,3,DUS,Duesseldorf,147,7.0
+France,1,CDG,Paris,237,7.0
+France,2,ORY,Paris,118,27.0
+France,3,NCE,Nice,89,22.0
+Canada,1,YYZ,Toronto,147,20.0
+Canada,2,YUL,Montreal,93,28.0
+Canada,3,YVR,Vancouver,75,44.0
+Russia,1,DME,Moscow,187,37.0
+Russia,2,SVO,Moscow,144,31.0
+Russia,3,LED,St. Petersburg,109,36.0

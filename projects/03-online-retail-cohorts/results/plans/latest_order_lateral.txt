@@ -1,0 +1,48 @@
+-- latest_order_lateral: The latest purchase of every German customer: a LATERAL subquery with ORDER BY ... LIMIT 1 runs
+
+=== BEFORE (constraint indexes only) ===
+Nested Loop (actual time=60.118..6345.643 rows=106.00 loops=1)
+  Buffers: shared hit=1276924
+  ->  Index Scan using customers_pkey on customers c (actual time=0.038..2.591 rows=106.00 loops=1)
+        Filter: (country = 'Germany'::text)
+        Rows Removed by Filter: 5732
+        Index Searches: 1
+        Buffers: shared hit=5772
+  ->  Limit (actual time=59.835..59.836 rows=1.00 loops=106)
+        Buffers: shared hit=1271152
+        ->  Sort (actual time=59.829..59.829 rows=1.00 loops=106)
+              Sort Key: s.invoiced_at DESC, s.invoice DESC
+              Sort Method: top-N heapsort  Memory: 25kB
+              Buffers: shared hit=1271152
+              ->  Seq Scan on sales s (actual time=22.387..59.772 rows=147.42 loops=106)
+                    Filter: (customer_id = c.customer_id)
+                    Rows Removed by Filter: 778637
+                    Buffers: shared hit=1271152
+Planning Time: 0.126 ms
+Execution Time: 6345.751 ms
+
+=== AFTER: CREATE INDEX sales_customer_time ON sales (customer_id, invoiced_at DESC) ===
+Sort (actual time=1.185..1.189 rows=106.00 loops=1)
+  Sort Key: c.customer_id
+  Sort Method: quicksort  Memory: 29kB
+  Buffers: shared hit=598
+  ->  Nested Loop (actual time=0.025..1.168 rows=106.00 loops=1)
+        Buffers: shared hit=598
+        ->  Seq Scan on customers c (actual time=0.008..0.300 rows=106.00 loops=1)
+              Filter: (country = 'Germany'::text)
+              Rows Removed by Filter: 5732
+              Buffers: shared hit=60
+        ->  Limit (actual time=0.008..0.008 rows=1.00 loops=106)
+              Buffers: shared hit=538
+              ->  Incremental Sort (actual time=0.008..0.008 rows=1.00 loops=106)
+                    Sort Key: s.invoiced_at DESC, s.invoice DESC
+                    Presorted Key: s.invoiced_at
+                    Full-sort Groups: 106  Sort Methods: top-N heapsort, quicksort  Average Memory: 25kB  Peak Memory: 25kB
+                    Pre-sorted Groups: 5  Sort Method: top-N heapsort  Average Memory: 25kB  Peak Memory: 25kB
+                    Buffers: shared hit=538
+                    ->  Index Scan using sales_customer_time on sales s (actual time=0.002..0.005 rows=23.19 loops=106)
+                          Index Cond: (customer_id = c.customer_id)
+                          Index Searches: 106
+                          Buffers: shared hit=538
+Planning Time: 0.082 ms
+Execution Time: 1.207 ms

@@ -1,0 +1,71 @@
+-- airline_network: Every route of one airline, found by airline name through the foreign key. Postgres does not index
+
+=== BEFORE (constraint indexes only) ===
+Sort (actual time=4.135..4.136 rows=17.00 loops=1)
+  Sort Key: a.iata, b.iata
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=584
+  ->  Nested Loop (actual time=0.494..4.127 rows=17.00 loops=1)
+        Buffers: shared hit=584
+        ->  Nested Loop (actual time=0.491..4.111 rows=17.00 loops=1)
+              Buffers: shared hit=533
+              ->  Hash Join (actual time=0.484..4.088 rows=17.00 loops=1)
+                    Hash Cond: (r.airline_id = al.airline_id)
+                    Buffers: shared hit=482
+                    ->  Seq Scan on routes r (actual time=0.006..1.652 rows=66752.00 loops=1)
+                          Buffers: shared hit=432
+                    ->  Hash (actual time=0.312..0.313 rows=1.00 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=50
+                          ->  Seq Scan on airlines al (actual time=0.018..0.310 rows=1.00 loops=1)
+                                Filter: (name = 'Air Tahiti Nui'::text)
+                                Rows Removed by Filter: 6161
+                                Buffers: shared hit=50
+              ->  Index Scan using airports_pkey on airports a (actual time=0.001..0.001 rows=1.00 loops=17)
+                    Index Cond: (airport_id = r.src_id)
+                    Index Searches: 17
+                    Buffers: shared hit=51
+        ->  Index Scan using airports_pkey on airports b (actual time=0.001..0.001 rows=1.00 loops=17)
+              Index Cond: (airport_id = r.dst_id)
+              Index Searches: 17
+              Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=12
+Planning Time: 0.232 ms
+Execution Time: 4.154 ms
+
+=== AFTER: CREATE INDEX routes_airline ON routes (airline_id) ===
+Sort (actual time=0.219..0.220 rows=17.00 loops=1)
+  Sort Key: a.iata, b.iata
+  Sort Method: quicksort  Memory: 25kB
+  Buffers: shared hit=165
+  ->  Nested Loop (actual time=0.021..0.215 rows=17.00 loops=1)
+        Buffers: shared hit=165
+        ->  Nested Loop (actual time=0.020..0.202 rows=17.00 loops=1)
+              Buffers: shared hit=114
+              ->  Nested Loop (actual time=0.017..0.187 rows=17.00 loops=1)
+                    Buffers: shared hit=63
+                    ->  Seq Scan on airlines al (actual time=0.011..0.177 rows=1.00 loops=1)
+                          Filter: (name = 'Air Tahiti Nui'::text)
+                          Rows Removed by Filter: 6161
+                          Buffers: shared hit=50
+                    ->  Bitmap Heap Scan on routes r (actual time=0.005..0.008 rows=17.00 loops=1)
+                          Recheck Cond: (al.airline_id = airline_id)
+                          Heap Blocks: exact=11
+                          Buffers: shared hit=13
+                          ->  Bitmap Index Scan on routes_airline (actual time=0.002..0.002 rows=17.00 loops=1)
+                                Index Cond: (airline_id = al.airline_id)
+                                Index Searches: 1
+                                Buffers: shared hit=2
+              ->  Index Scan using airports_pkey on airports a (actual time=0.001..0.001 rows=1.00 loops=17)
+                    Index Cond: (airport_id = r.src_id)
+                    Index Searches: 17
+                    Buffers: shared hit=51
+        ->  Index Scan using airports_pkey on airports b (actual time=0.001..0.001 rows=1.00 loops=17)
+              Index Cond: (airport_id = r.dst_id)
+              Index Searches: 17
+              Buffers: shared hit=51
+Planning:
+  Buffers: shared hit=18
+Planning Time: 0.154 ms
+Execution Time: 0.230 ms

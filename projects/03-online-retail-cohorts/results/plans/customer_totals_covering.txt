@@ -1,0 +1,42 @@
+-- customer_totals_covering: Lifetime value of a group of customers. The covering index answers from the index alone.
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=40.365..44.963 rows=40.00 loops=1)
+  Group Key: customer_id
+  Buffers: shared hit=12082
+  ->  Gather Merge (actual time=40.197..44.289 rows=3633.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=12082
+        ->  Sort (actual time=24.541..24.584 rows=1211.00 loops=3)
+              Sort Key: customer_id, invoice
+              Sort Method: quicksort  Memory: 115kB
+              Buffers: shared hit=12082
+              Worker 0:  Sort Method: quicksort  Memory: 62kB
+              Worker 1:  Sort Method: quicksort  Memory: 58kB
+              ->  Parallel Seq Scan on sales (actual time=1.572..24.256 rows=1211.00 loops=3)
+                    Filter: ((customer_id >= 12360) AND (customer_id <= 12400))
+                    Rows Removed by Filter: 258384
+                    Buffers: shared hit=11992
+Planning Time: 0.072 ms
+Execution Time: 44.994 ms
+
+=== AFTER: CREATE INDEX sales_customer_cover ON sales (customer_id) INCLUDE (invoice, revenue) ===
+GroupAggregate (actual time=0.128..1.558 rows=40.00 loops=1)
+  Group Key: customer_id
+  Buffers: shared hit=21
+  ->  Incremental Sort (actual time=0.072..0.994 rows=3633.00 loops=1)
+        Sort Key: customer_id, invoice
+        Presorted Key: customer_id
+        Full-sort Groups: 27  Sort Method: quicksort  Average Memory: 27kB  Peak Memory: 27kB
+        Pre-sorted Groups: 33  Sort Method: quicksort  Average Memory: 33kB  Peak Memory: 33kB
+        Buffers: shared hit=21
+        ->  Index Only Scan using sales_customer_cover on sales (actual time=0.008..0.291 rows=3633.00 loops=1)
+              Index Cond: ((customer_id >= 12360) AND (customer_id <= 12400))
+              Heap Fetches: 0
+              Index Searches: 1
+              Buffers: shared hit=21
+Planning:
+  Buffers: shared hit=8
+Planning Time: 0.081 ms
+Execution Time: 1.574 ms

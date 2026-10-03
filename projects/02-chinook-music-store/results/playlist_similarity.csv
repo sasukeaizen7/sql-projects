@@ -1,0 +1,11 @@
+playlist_a,playlist_b,tracks_a,tracks_b,common,jaccard
+Music (#1),Music (#8),3290,3290,3290,1.0
+TV Shows (#3),TV Shows (#10),213,213,213,1.0
+Music (#1),90’s Music (#5),3290,1477,1477,0.449
+90’s Music (#5),Music (#8),1477,3290,1477,0.449
+Classical (#12),Classical 101 - Deep Cuts (#13),75,25,25,0.333
+Classical (#12),Classical 101 - Next Steps (#14),75,25,25,0.333
+Classical (#12),Classical 101 - The Basics (#15),75,25,25,0.333
+90’s Music (#5),Classical (#12),1477,75,41,0.027
+Music (#8),Classical (#12),3290,75,75,0.023
+Music (#1),Classical (#12),3290,75,75,0.023

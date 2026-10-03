@@ -46,6 +46,14 @@ def main(p: Project) -> None:
     ax.set_title("Verstappen's 2023 is the most dominant season ever: 19 wins in 22 races")
     save(fig, p.images / "dominant_seasons.png", SOURCE, "Share of a season's races won by a single driver, top 10 (complete seasons 1950-2025)")
 
+    # 4. Head-to-head against team-mates (self-join of results on race + constructor).
+    t = p.result("teammate_battles")
+    fig, ax = plt.subplots(figsize=(9, 4.8))
+    bar_h(ax, t["driver"] + " vs " + t["teammate"], t["ahead_pct"], fmt=lambda v: f"{v:.0f}%")
+    ax.set_title("Verstappen finished ahead of Pérez in 91% of their races together")
+    save(fig, p.images / "teammate_battles.png", SOURCE,
+         "% of races (both cars classified) a driver finished ahead of a team-mate, pairs with 30+ such races")
+
 
 if __name__ == "__main__":
     main(Project.here(__file__))

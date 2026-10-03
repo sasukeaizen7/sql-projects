@@ -11,6 +11,8 @@ SQL conventions
 
   Every named query is executed and its result saved to ``results/<name>.csv``,
   which the visualizations and the README read.
+* ``sql/03_postgres_schema.sql`` + ``sql/04_index_benchmarks.sql`` (optional): the same tables in
+  PostgreSQL and index benchmarks on them, see ``toolkit/postgres.py``.
 """
 
 from __future__ import annotations
@@ -120,6 +122,9 @@ class Project:
         print(" 1/4 download"); self.download()
         print(" 2/4 load"); self.load()
         print(" 3/4 analyze"); self.analyze()
+        if (self.root / "sql" / "03_postgres_schema.sql").exists():
+            from . import postgres
+            print(" 3b  postgres: load + index benchmarks"); postgres.run(self)
         if visualize:
             print(" 4/4 visualize")
             self.images.mkdir(exist_ok=True)

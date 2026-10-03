@@ -1,0 +1,44 @@
+-- month_brin: Revenue per day in November 2011, the busiest month. BRIN works because lines are stored in time order.
+
+=== BEFORE (constraint indexes only) ===
+GroupAggregate (actual time=38.635..61.257 rows=26.00 loops=1)
+  Group Key: ((invoiced_at)::date)
+  Buffers: shared hit=12084
+  ->  Gather Merge (actual time=38.104..52.053 rows=64038.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=12084
+        ->  Sort (actual time=22.645..23.342 rows=21346.00 loops=3)
+              Sort Key: ((invoiced_at)::date), invoice
+              Sort Method: quicksort  Memory: 1436kB
+              Buffers: shared hit=12084
+              Worker 0:  Sort Method: quicksort  Memory: 1649kB
+              Worker 1:  Sort Method: quicksort  Memory: 1640kB
+              ->  Parallel Seq Scan on sales (actual time=17.188..20.508 rows=21346.00 loops=3)
+                    Filter: ((invoiced_at >= '2011-11-01 00:00:00'::timestamp without time zone) AND (invoiced_at < '2011-12-01 00:00:00'::timestamp without time zone))
+                    Rows Removed by Filter: 238249
+                    Buffers: shared hit=11992
+Planning Time: 0.099 ms
+Execution Time: 61.296 ms
+
+=== AFTER: CREATE INDEX sales_time_brin ON sales USING brin (invoiced_at) ===
+GroupAggregate (actual time=22.194..33.240 rows=26.00 loops=1)
+  Group Key: ((invoiced_at)::date)
+  Buffers: shared hit=1154
+  ->  Sort (actual time=21.887..24.199 rows=64038.00 loops=1)
+        Sort Key: ((invoiced_at)::date), invoice
+        Sort Method: quicksort  Memory: 3957kB
+        Buffers: shared hit=1154
+        ->  Bitmap Heap Scan on sales (actual time=0.603..12.826 rows=64038.00 loops=1)
+              Recheck Cond: ((invoiced_at >= '2011-11-01 00:00:00'::timestamp without time zone) AND (invoiced_at < '2011-12-01 00:00:00'::timestamp without time zone))
+              Rows Removed by Index Recheck: 10713
+              Heap Blocks: lossy=1152
+              Buffers: shared hit=1154
+              ->  Bitmap Index Scan on sales_time_brin (actual time=0.030..0.031 rows=11520.00 loops=1)
+                    Index Cond: ((invoiced_at >= '2011-11-01 00:00:00'::timestamp without time zone) AND (invoiced_at < '2011-12-01 00:00:00'::timestamp without time zone))
+                    Index Searches: 1
+                    Buffers: shared hit=2
+Planning:
+  Buffers: shared hit=1
+Planning Time: 0.092 ms
+Execution Time: 33.404 ms

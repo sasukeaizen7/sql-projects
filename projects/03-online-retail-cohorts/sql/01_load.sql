@@ -52,19 +52,61 @@ SELECT l.*,
        END AS quality
 FROM lines_typed l;
 
-CREATE OR REPLACE TABLE sales AS
-SELECT invoice, stock_code, description, quantity, invoiced_at, unit_price,
-       round(quantity * unit_price, 2) AS revenue, customer_id, country
+-- Star schema with enforced keys: sales (fact, one row per clean line) -> customers, products.
+-- DuckDB refuses to replace a table a foreign key points to, so drop the fact table first.
+DROP TABLE IF EXISTS sales;
+DROP TABLE IF EXISTS customers;
+DROP TABLE IF EXISTS products;
+
+-- One row per product. 595 stock codes appear under several descriptions (typos, renames):
+-- keep the most frequent one.
+CREATE TABLE products (
+    stock_code  VARCHAR PRIMARY KEY,
+    description VARCHAR NOT NULL
+);
+INSERT INTO products
+SELECT stock_code, mode(description)
 FROM line_quality
-WHERE quality = 'ok';
+WHERE quality = 'ok'
+GROUP BY stock_code;
 
 -- One row per customer: first purchase, last purchase, orders, revenue (used by cohort and RFM queries).
-CREATE OR REPLACE TABLE customers AS
+CREATE TABLE customers (
+    customer_id       INTEGER PRIMARY KEY,
+    country           VARCHAR NOT NULL,
+    first_purchase_at TIMESTAMP NOT NULL,
+    last_purchase_at  TIMESTAMP NOT NULL,
+    orders            INTEGER NOT NULL CHECK (orders > 0),
+    revenue           DOUBLE NOT NULL CHECK (revenue > 0),
+    CHECK (last_purchase_at >= first_purchase_at)
+);
+INSERT INTO customers
 SELECT customer_id,
-       any_value(country)                                   AS country,
+       mode(country)                                        AS country,
        min(invoiced_at)                                     AS first_purchase_at,
        max(invoiced_at)                                     AS last_purchase_at,
        count(DISTINCT invoice)                              AS orders,
-       round(sum(revenue), 2)                               AS revenue
-FROM sales
+       round(sum(round(quantity * unit_price, 2)), 2)       AS revenue
+FROM line_quality
+WHERE quality = 'ok'
 GROUP BY customer_id;
+
+CREATE TABLE sales (
+    line_id     INTEGER PRIMARY KEY,
+    invoice     VARCHAR NOT NULL,
+    stock_code  VARCHAR NOT NULL REFERENCES products (stock_code),
+    description VARCHAR,
+    quantity    INTEGER NOT NULL CHECK (quantity > 0),
+    invoiced_at TIMESTAMP NOT NULL,
+    unit_price  DOUBLE NOT NULL CHECK (unit_price > 0),
+    revenue     DOUBLE NOT NULL,
+    customer_id INTEGER NOT NULL REFERENCES customers (customer_id),
+    country     VARCHAR NOT NULL
+);
+INSERT INTO sales
+SELECT row_number() OVER (ORDER BY invoiced_at, invoice, stock_code, quantity, unit_price) AS line_id,
+       invoice, stock_code, description, quantity, invoiced_at, unit_price,
+       round(quantity * unit_price, 2) AS revenue, customer_id, country
+FROM line_quality
+WHERE quality = 'ok'
+ORDER BY line_id;

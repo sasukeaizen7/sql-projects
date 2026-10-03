@@ -1,0 +1,33 @@
+-- low_selectivity: Counter-example: credit-card trips are 80% of the table. An index on payment is useless here, and
+
+=== BEFORE (constraint indexes only) ===
+Finalize Aggregate (actual time=221.941..227.929 rows=1.00 loops=1)
+  Buffers: shared hit=16012 read=20100
+  ->  Gather (actual time=221.818..227.918 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16012 read=20100
+        ->  Partial Aggregate (actual time=205.202..205.202 rows=1.00 loops=3)
+              Buffers: shared hit=16012 read=20100
+              ->  Parallel Seq Scan on trips (actual time=0.384..88.090 rows=765647.33 loops=3)
+                    Filter: (payment = 'Credit card'::text)
+                    Rows Removed by Filter: 190217
+                    Buffers: shared hit=16012 read=20100
+Planning Time: 0.064 ms
+Execution Time: 227.960 ms
+
+=== AFTER: CREATE INDEX trips_payment ON trips (payment) ===
+Finalize Aggregate (actual time=266.545..272.451 rows=1.00 loops=1)
+  Buffers: shared hit=16012 read=20100
+  ->  Gather (actual time=266.424..272.441 rows=3.00 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=16012 read=20100
+        ->  Partial Aggregate (actual time=213.923..213.924 rows=1.00 loops=3)
+              Buffers: shared hit=16012 read=20100
+              ->  Parallel Seq Scan on trips (actual time=0.373..90.817 rows=765647.33 loops=3)
+                    Filter: (payment = 'Credit card'::text)
+                    Rows Removed by Filter: 190217
+                    Buffers: shared hit=16012 read=20100
+Planning Time: 0.068 ms
+Execution Time: 272.487 ms

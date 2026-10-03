@@ -1,0 +1,31 @@
+-- invoice_btree: All lines of one invoice, by its number, with a B-tree.
+
+=== BEFORE (constraint indexes only) ===
+Gather Merge (actual time=35.529..40.063 rows=541.00 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=12066
+  ->  Sort (actual time=19.472..19.478 rows=180.33 loops=3)
+        Sort Key: line_id
+        Sort Method: quicksort  Memory: 36kB
+        Buffers: shared hit=12066
+        Worker 0:  Sort Method: quicksort  Memory: 25kB
+        Worker 1:  Sort Method: quicksort  Memory: 34kB
+        ->  Parallel Seq Scan on sales (actual time=18.580..19.387 rows=180.33 loops=3)
+              Filter: (invoice = '576339'::text)
+              Rows Removed by Filter: 259414
+              Buffers: shared hit=11992
+Planning Time: 0.116 ms
+Execution Time: 40.103 ms
+
+=== AFTER: CREATE INDEX sales_invoice_btree ON sales (invoice) ===
+Sort (actual time=0.134..0.153 rows=541.00 loops=1)
+  Sort Key: line_id
+  Sort Method: quicksort  Memory: 46kB
+  Buffers: shared hit=12
+  ->  Index Scan using sales_invoice_btree on sales (actual time=0.008..0.088 rows=541.00 loops=1)
+        Index Cond: (invoice = '576339'::text)
+        Index Searches: 1
+        Buffers: shared hit=12
+Planning Time: 0.048 ms
+Execution Time: 0.179 ms

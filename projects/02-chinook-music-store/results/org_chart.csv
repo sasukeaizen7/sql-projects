@@ -1,0 +1,9 @@
+employee,title,reporting_line,customers_in_scope,revenue_in_scope
+Andrew Adams,General Manager,Andrew Adams,59.0,2328.6
+    Michael Mitchell,IT Manager,Andrew Adams > Michael Mitchell,0.0,0.0
+        Laura Callahan,IT Staff,Andrew Adams > Michael Mitchell > Laura Callahan,0.0,0.0
+        Robert King,IT Staff,Andrew Adams > Michael Mitchell > Robert King,0.0,0.0
+    Nancy Edwards,Sales Manager,Andrew Adams > Nancy Edwards,59.0,2328.6
+        Jane Peacock,Sales Support Agent,Andrew Adams > Nancy Edwards > Jane Peacock,21.0,833.04
+        Margaret Park,Sales Support Agent,Andrew Adams > Nancy Edwards > Margaret Park,20.0,775.4
+        Steve Johnson,Sales Support Agent,Andrew Adams > Nancy Edwards > Steve Johnson,18.0,720.16

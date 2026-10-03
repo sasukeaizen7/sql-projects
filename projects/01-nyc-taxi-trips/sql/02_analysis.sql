@@ -80,3 +80,93 @@ FROM trips
 WHERE payment = 'Credit card'
 GROUP BY distance_band
 ORDER BY distance_band;
+
+-- ============================================================================================
+-- Advanced SQL
+-- ============================================================================================
+
+-- name: revenue_rollup
+-- Revenue by pickup borough and payment type, with borough subtotals and a grand total (ROLLUP).
+-- grouping() tells a subtotal row apart from a real NULL. Each payment's share is taken against its
+-- own borough's subtotal row, which first_value() finds because subtotals sort first in the window.
+SELECT CASE WHEN grouping(z.borough) = 1 THEN 'All boroughs' ELSE z.borough END        AS borough,
+       CASE WHEN grouping(t.payment) = 1 THEN 'All payments' ELSE t.payment END        AS payment,
+       grouping(z.borough, t.payment)                                                   AS level,  -- 0 detail, 1 borough subtotal, 3 grand total
+       count(*)                                                                         AS trips,
+       round(sum(t.total_amount), 0)                                                    AS revenue_usd,
+       round(100.0 * count(*) / first_value(count(*)) OVER (
+                 PARTITION BY grouping(z.borough), z.borough ORDER BY grouping(t.payment) DESC), 1) AS share_of_borough_trips_pct
+FROM trips t
+JOIN zones z ON z.zone_id = t.pickup_zone_id
+WHERE z.borough NOT IN ('Unknown', 'N/A', 'EWR')
+GROUP BY ROLLUP (z.borough, t.payment)
+ORDER BY grouping(z.borough) DESC,
+         max(sum(t.total_amount)) OVER (PARTITION BY grouping(z.borough), z.borough) DESC,
+         level DESC, trips DESC;
+
+-- name: od_imbalance
+-- Which busy zone pairs are the most one-directional? The flow table is self-joined on (A->B, B->A).
+WITH flows AS (
+    SELECT pickup_zone_id AS a, dropoff_zone_id AS b, count(*) AS trips
+    FROM trips
+    WHERE pickup_zone_id <> dropoff_zone_id
+      AND pickup_zone_id < 264 AND dropoff_zone_id < 264          -- 264/265 = unknown / outside NYC
+    GROUP BY ALL
+)
+SELECT za.zone AS zone_a, zb.zone AS zone_b,
+       f.trips              AS a_to_b,
+       coalesce(r.trips, 0) AS b_to_a,
+       round(f.trips / greatest(coalesce(r.trips, 0), 1), 1) AS ratio
+FROM flows f
+LEFT JOIN flows r ON r.a = f.b AND r.b = f.a
+JOIN zones za ON za.zone_id = f.a
+JOIN zones zb ON zb.zone_id = f.b
+WHERE f.trips + coalesce(r.trips, 0) >= 3000
+ORDER BY ratio DESC
+LIMIT 10;
+
+-- name: fare_outliers
+-- Overcharging check: Tukey fences on the fare of each pickup -> dropoff route (100+ trips).
+-- How often is each payment type far above its route's normal fare (fare > Q3 + 3 x IQR)?
+WITH route_stats AS (
+    SELECT pickup_zone_id, dropoff_zone_id,
+           quantile_cont(fare_amount, 0.25) AS q1,
+           quantile_cont(fare_amount, 0.75) AS q3
+    FROM trips
+    GROUP BY ALL
+    HAVING count(*) >= 100
+), flagged AS (
+    SELECT t.payment, t.fare_amount > s.q3 + 3 * (s.q3 - s.q1) AS outlier
+    FROM trips t
+    JOIN route_stats s USING (pickup_zone_id, dropoff_zone_id)
+)
+SELECT payment,
+       count(*)                                                     AS trips,
+       count(*) FILTER (WHERE outlier)                              AS outliers,
+       round(100.0 * count(*) FILTER (WHERE outlier) / count(*), 2) AS outlier_pct
+FROM flagged
+GROUP BY payment
+ORDER BY outlier_pct DESC;
+
+-- name: airport_destinations
+-- The top 3 destination zones from each airport: the LATERAL subquery runs once per airport row
+-- and can reference it (a.zone_id), which a plain subquery in FROM cannot.
+SELECT a.zone AS airport, d.rank, d.destination, d.borough, d.trips,
+       round(100.0 * d.trips / a.airport_trips, 1) AS share_pct, d.avg_total_usd
+FROM (SELECT z.zone_id, z.zone, count(*) AS airport_trips
+      FROM zones z JOIN trips t ON t.pickup_zone_id = z.zone_id
+      WHERE z.zone IN ('JFK Airport', 'LaGuardia Airport')
+      GROUP BY ALL) a,
+LATERAL (
+    SELECT row_number() OVER (ORDER BY count(*) DESC) AS rank,
+           dz.zone AS destination, dz.borough, count(*) AS trips,
+           round(avg(t.total_amount), 2) AS avg_total_usd
+    FROM trips t
+    JOIN zones dz ON dz.zone_id = t.dropoff_zone_id
+    WHERE t.pickup_zone_id = a.zone_id
+      AND t.dropoff_zone_id <> a.zone_id AND t.dropoff_zone_id < 264
+    GROUP BY dz.zone, dz.borough
+    ORDER BY trips DESC
+    LIMIT 3
+) d
+ORDER BY a.zone, d.rank;
